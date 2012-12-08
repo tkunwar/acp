@@ -37,6 +37,5 @@
 #define KEYPAD_MODE ON
 #define CBREAK_MODE ON
 
-
 #endif
 

@@ -32,7 +32,7 @@ struct window_state_t {
 };
 //store acp_state information
 struct ACP_STATE {
-	struct window_state_t menubar_win, GMM_win,CMM_win,console_win;
+	struct window_state_t menubar_win, GMM_win, CMM_win, console_win;
 	BOOL color_ok;
 	char log_buffer[LOG_BUFF_SIZE];
 	BOOL gui_ready;
@@ -86,11 +86,11 @@ void acp_move_wxy(struct window_state_t *win, int new_y, int new_x);
 void acp_mv_wprintw(struct window_state_t *win, int new_y, int new_x,
 		char *string);
 void set_focus_to_console();
-void log_msg_to_console(const char* msg,log_level_t level);
+void log_msg_to_console(const char* msg, log_level_t level);
 void destroy_cdkscreens();
 void init_window_pointers();
 void init_cdks_pointers();
 void destroy_acp_window(); //main routine for deleting windows
 void redraw_cdkscreens(); //draw cdkscrens after drawing a popup window or
-								//when needed
+//when needed
 #endif

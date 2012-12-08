@@ -32,8 +32,8 @@ void process_user_response() {
 			acp_shutdown();
 			break;
 		case KEY_F(2):
-				display_help();
-				break;
+			display_help();
+			break;
 		case KEY_UP:
 			set_focus_to_console();
 			break;
@@ -67,21 +67,16 @@ void acp_shutdown() {
  * 				all cdkscreens since we will be displaying popup windows
  * 				in master_cdkscreen.
  */
-void display_help(){
+void display_help() {
 	const char *mesg[15];
-	const char *buttons[] =
-		    {
-		       "<OK>"
-		    };
-			mesg[0]="<C>This program shows how a compressed paging mechanism has";
-			mesg[1]="<C>advantage over traditional paging systems.";
-		    mesg[2] = "<C></U>Project authors";
-		    mesg[3] = "<C>Amrita,Rashmi and Varsha";
+	const char *buttons[] = { "<OK>" };
+	mesg[0] = "<C>This program shows how a compressed paging mechanism has";
+	mesg[1] = "<C>advantage over traditional paging systems.";
+	mesg[2] = "<C></U>Project authors";
+	mesg[3] = "<C>Amrita,Rashmi and Varsha";
 
-		  popupDialog (acp_state.master_screen,
-				     (CDK_CSTRING2) mesg, 4,
-				     (CDK_CSTRING2) buttons, 1);
-		  redraw_cdkscreens();
+	popupDialog(acp_state.master_screen, (CDK_CSTRING2) mesg, 4,
+			(CDK_CSTRING2) buttons, 1);
+	redraw_cdkscreens();
 }
-
 

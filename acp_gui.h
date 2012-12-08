@@ -38,7 +38,7 @@ void draw_windows(); //draw parent windows
 struct acp_ui_label *create_new_label(WINDOW *ptr, int beg_x, int beg_y,
 		char *caption);
 void draw_menubar();
-void calculate_padding(int *hor_padding,int *ver_padding);
+void calculate_padding(int *hor_padding, int *ver_padding);
 void print_window_state(struct window_state_t window);
 void init_cdk();
 void check_window_configuration();

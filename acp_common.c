@@ -24,7 +24,7 @@ void exit_acp(const char *msg) {
 	}
 	exit(EXIT_FAILURE);
 }
-void destroy_cdkscreens(){
+void destroy_cdkscreens() {
 	destroyCDKScreen(acp_state.menubar_win.cdksptr);
 	destroyCDKScreen(acp_state.GMM_win.cdksptr);
 	destroyCDKScreen(acp_state.CMM_win.cdksptr);
@@ -42,7 +42,8 @@ void init_acp_state() {
 	 */
 	acp_state.menubar_win.beg_x = acp_state.menubar_win.beg_y =
 			acp_state.menubar_win.cur_x = acp_state.menubar_win.cur_y =
-					acp_state.menubar_win.height = acp_state.menubar_win.width = 0;
+					acp_state.menubar_win.height = acp_state.menubar_win.width =
+							0;
 
 	acp_state.CMM_win.beg_x = acp_state.CMM_win.beg_y =
 			acp_state.CMM_win.cur_x = acp_state.CMM_win.cur_y =
@@ -56,14 +57,14 @@ void init_acp_state() {
 	acp_state.console = NULL;
 	acp_state.cursesWin = NULL;
 }
-void init_window_pointers(){
-	acp_state.menubar_win.wptr=acp_state.GMM_win.wptr=
-			acp_state.CMM_win.wptr=acp_state.console_win.wptr=NULL;
+void init_window_pointers() {
+	acp_state.menubar_win.wptr = acp_state.GMM_win.wptr =
+			acp_state.CMM_win.wptr = acp_state.console_win.wptr = NULL;
 }
-void init_cdks_pointers(){
-	acp_state.menubar_win.cdksptr=acp_state.GMM_win.cdksptr=
-			acp_state.CMM_win.cdksptr=acp_state.console_win.cdksptr=NULL;
-	acp_state.master_screen=NULL;
+void init_cdks_pointers() {
+	acp_state.menubar_win.cdksptr = acp_state.GMM_win.cdksptr =
+			acp_state.CMM_win.cdksptr = acp_state.console_win.cdksptr = NULL;
+	acp_state.master_screen = NULL;
 }
 /**
  * @@debug_generic(const char *msg)
@@ -163,7 +164,7 @@ void close_ui() {
 	endwin();
 }
 
-void destroy_acp_window(){
+void destroy_acp_window() {
 	//destroy window as well as evrything it contains--label,cdkscreens,widgets
 	//etc.
 	//order can be widgets->cdkscreen->window_pointers
@@ -233,7 +234,7 @@ void log_msg_to_console(const char *msg, log_level_t log_level) {
 	addCDKSwindow(acp_state.console, log_msg, BOTTOM);
 }
 
-void redraw_cdkscreens(){
+void redraw_cdkscreens() {
 	drawCDKScreen(acp_state.menubar_win.cdksptr);
 	drawCDKScreen(acp_state.GMM_win.cdksptr);
 	drawCDKScreen(acp_state.CMM_win.cdksptr);

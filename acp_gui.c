@@ -226,7 +226,6 @@ void draw_GMM_window() {
 			(CDK_CSTRING2) lblText, 1, FALSE, FALSE);
 	drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
-
 }
 void draw_CMM_window() {
 	//set the title bar
