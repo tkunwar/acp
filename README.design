@@ -1,0 +1,291 @@
+Adaptive Compressed Caching
+----------------------------
+
+Usually OS do the paging on secondary storage either in a swap file or a swap partiion. 
+Secondary storage being slow , impacts overall system  performance. The idea is if we could do the
+pagin in RAM only, the process of paging could be improved.
+
+The pages to be swapped are stored in a special memory area called as compresed cache (CC). SO
+memory now has two parts one is uncompressed where OS and programs store their temporary data.
+and other part is the compressed cache.
+
+-------------------------------------------------
+|	Non compresed					|Compressed |
+|	 Memory	(NCM)					| cache(CC) |
+-------------------------------------------------
+
+Our project is to implement a (basically simulation) program which shows the performance gain 
+in using compressed cache over the traditional paging. So our project will consist of two parts
+one will implement traditional paging and other with compressed cache.
+
+The compressed  cache that we are using is special in the sense that the buffer where compressed 
+pages are stored dynamically adjusts its size. The initial cache size is very small and grows as 
+and when needed. However there must be a limit beyond which it wont grow.
+
+Also we will try to get best compression for a page by analyzing the page data and if possible
+utilize an algorithm that has best compression ratio for that data type. In general, we will try 
+to get better memory usage and compression ratio so that we can store more data in a given memory
+area.
+
+Due to introduction of our cache layer the paging or virtual memory system now looks like following:
+
+-------------------------				-------------------------------------------------
+|	Uncompressed memory	|compress		|	Compressed cache							|
+|(page out when more 	|------------->	|(swap out compressed pages to swap file when 	|
+|	memory needed)		|	page		| cache size cant grow )						|
+-------------------------				-------------------------------------------------
+		^			^							|			|
+		|			| (Decompress page)			|			|
+		|			-----------------------------			|
+		|													v
+		|(reclaim pages after a page fault)	-----------------------------------------
+		|----------------------------------	|		swap area						|
+		(decompress pages before loading)	|(store compressed in null padded form	|										
+				into NCM					|		to ensure equal block size)		|
+											----------------------------------------
+
+Design of a page 
+----------------
+A page will be of constant size 4096 bytes(4 KB). Throughout this project, when we talk about 
+compressing a page then we actually mean compressing contents of the page.
+
+Design of Compressed cache
+--------------------------
+CC consists of memory buffers called cells. Usually a cell is large enough to hold atleast
+2-3 pages in compressed format. see the architecture diagram for overall structure of CC.
+CC is basically a list of cells. Existing cells may be fully occupied or have some space 
+between them. Note that a cell is of constant size.
+
+		Cell1				Cell2				CellN
+	-----------------	-----------------		-----------------
+	|	|	|  |	|	|	|	|		|		| 	|	 |		|
+	|P1	|IFS|P2|TFS	|	|P3	|P4	|FS		|.......|PX||PY	 |FS	|
+	|	|	|  |	|	| 	|	|		|		| 	|	 |		|
+	-----------------	-----------------		-----------------
+	
+Legend:	PX -- Page Id
+		IFS-- Internal Free space (Between pages)
+		TFS	-- Total Free space 
+		FS -- Same as TFS
+		
+When new pages are to be stored in CC then either more memory for new cells will allocated
+(if possible) or compressed pages will be freed (based on LRU field) to backing store (swap).
+
+There may be internal free space due to a page in CC swapped because it was LRU and new memory for 
+a cell can not be allocated.
+
+
+General working of ACP 
+----------------------
+1. When paging begins, (either paginess factor is set at low value or high memory load) a  page in
+	NCM will be compressed and stored in CC.
+	
+	This page will be selected based on LRU factor.
+	
+2. Note that to ensure locality of processing more than one page can be selected for paging. However
+	to maintain simplicity, we will assume that only one page will be selected for paging 
+	at the given time.
+	
+3. All other attribiutes of this page including dirtiness, timestamp etc. will be retained throughout
+	CC and swap. However they will be modified when applicable.
+
+4.	Inserting a new page in CC
+	4.1	Compress this page-data, attribiutes are retained as such.
+	4.2
+		1) Search for a cell with smallest "final free space"**( maintain a table where cells with 
+				final free space in  ascending order are listed) enough to accomodate this page.
+				
+		2) If a cell is found, make an entry for this page and cell in the lookup_table (a table
+		 where cell and page relationship is listed).
+		 
+		----> store this page in this cell and update relevant details such as final available free
+		space in available_free_space table for this cell.
+		
+		3) If no such cell found then --
+			--> see if a new cell can be created. If yes then create a new cell and follows step 2.
+			-->If not possible to create a new cell then then swap out oldest page in CC to swap 
+			file. And after the LRU page has been swapped out to disk, follow step 1.
+
+
+Memory Compaction
+------------------
+When a page in CC has been swapped , the resulting free space may not lie in the end of the cell.
+causing internal fragmentation. The space in the end of the cell may not be correct or total space 
+of the cell due to this fragmentation. 
+
+The solution is to compact all the compressed page (by moving them in the begining of the cell) such 
+that total free space available in the cell will be in the end. 
+
+However it might lead to extra CPU overhead. Implement this feature but make it configurable. The
+option to enable cell compaction can be enabled from a config file.
+
+Standard Terms/Assumptions
+---------------
+1. Swapped out means a page being freed from CC to swap file. Here swap file means swap partition
+	or a backing store used for virtual memory mgmt.
+	
+	In general sense it can also denote movement of pages from NCM to CC. However movement of 
+	pages from NCM to CC will be referred to as paging.
+	
+	To optimize memory mgmt. only dirty pages will be compressed and stored in CC. clean pages will
+	be directly swapped out to swap file.
+	
+2.	swapping/paging will/may be used interchangeably. To be specific, paging will denote movement
+	of pages from NCM to CC while swapping will mean moving pages from CC to swap file. (Not a 
+	correct way to put , but nothing better in mind at this moment).
+
+3. In CC a page will mean a page in compressed format, unless specified, otherwise.
+
+Random Design thoughts
+----------------------
+1. We will need a "timer thread" which will continually update itself every lets say 10 miliseconds.
+	Based on this time value pages will given a age value. So when a page is accessed its timestamp
+	is updated to current timer value. And simialarly, its age can be given by 
+	
+	age of page= current timestamp - Page timestamp
+	
+2. Backing stores can be of different types but in our case we will assume it to be swap. Compressed
+	pages from CC will be swapped out. when needed these pages will directly be brought to NCM 
+	(after decompressing) without bringing them to CC.
+	
+3. There will be max. limit of CC that will grow dynamically. This field can be loaded from a 
+	config file. when CC size reaches this limit, swapping will occur. Also note that swapping will
+	occur only when CC size can not grow any further or any new page can not be accomodated in
+	CC anymore.
+	
+4.	In CC memory will be allocated for a cell only, not for a page. A cell will be of fiexd size. 
+	However this value can be loaded from a config file.
+	
+5. When to do paging ?
+	We can introduce "paginess factor" which will be on a scale of 0-10. A value X between 0 and 10
+	means start paging when NCM is 10*x % used then start paging. At this point pages from NCM will
+	be moved to CC. 
+	
+	0 value means always do paging and, 10 would mean start paging only NCM memory load is 100%.
+	
+6.	When to swap ?
+	Unlike paginess factor, swapping (freeing paging from CC to swap file) will begin when CC size 
+	can not grow any further (already reached CC max size ?). Due to paginess factor set at lower 
+	values CC may be full even though NCM memory load may not be 100%.
+	
+	Thus a higher paginess factor will mean swapping would most likely occur at high memory load
+	conditions.
+	
+7. A global_page_table will be maintained in NCM which will be global data structure to hold info about
+	pages. Any operation on a page whether made in NCM,CC or swap must be reflected in
+	global_page_table.
+	
+8.	A page is uniquely identifiable by its page_id. All routines must be able to provide info about 
+	a page when enquired by its page_id. 
+	
+	
+9.	Page address conversion:
+	------------------------
+	global_page_table will hold address of a page in NCM. 
+	Address of page in NCM when the concerned page is not in memory (it may be in CC/swap) is 
+	invalid and therefore, should not be used.
+	
+	when a page is in CC/swap these storage units will have corresponding addresses where actually 
+	the concerned page resides.
+	
+	In short, depending upon page's storage_loc value, a page's address will be provided by :
+	storage_loc 		valid_address_to_be_loaded_from
+		0						NCM
+		1						CC 
+		2						swap
+		
+10. A page will not be allowed to span over two or more cells. The size of a cell must always be 
+	greater than a page. A page in CC must be stored in a single cell only.
+		
+Configuration file sample entries
+----------------------------------
+#Max memory the proect will use
+ACPMemLimit=300 
+#Max memory of compressed cache --default is 20%
+CCMemLimit= 256 
+#define the paginess factor--on scale of 0-10
+paginess=9
+#enable cell compaction --yes/no
+cell_compaction=yes
+
+=======================================================================================
+Technical Design 
+=================
+General notes
+--------------------------------
+1.	unsigned int must be 4 bytes
+	unsigned long int must be 8 bytes  (to be able to store 64 bit addresses)
+	see if ILP32 data model supports this
+	
+2.	At this moment i think linked list of structures should be good. See if a better data structures
+	can be used. 
+		
+structure of global_page_table
+-----------------------------
+Description: global_page_table holds the list of all pages with their attribiutes.
+Type:	page_id: unsigned int 
+		address: unsigned long int 
+
+	page_id			address
+	0				0x163a8823
+	10				0x273ac383
+	
+	
+Attributes of a page 
+--------------------
+page ={	page_id(unique identifier),
+		dirty,
+		backing_store,
+		data={info about variables stored-- is it needed ?},
+		storage_loc(where is it now-- {0= NCM,1=CC,2=swap}),
+		LAT(Last accessed timestamp)
+		
+	  }
+		
+Data structures in CC 
+----------------------
+1.	cell_list
+	Description: maintain a list of all cells created so far with their ids and addresses.
+	Type : 	cell_id:unsigned int 
+			address: unsigned long int 
+			available_total_free_space: unsigned int 
+	Note:	this list can be sorted (in ascending order) based on available_total_free_space.
+			Possibly insertion sort will do.
+			
+			
+	cell_id			address 		available_total_free_space(bytes)
+	0				0x1526ad			230 
+	112				0x34ac25			155
+	123				0xa53689			130
+	
+2.	page_lookup_table
+	Description: helps in finding where a page is stored in a given cell.
+	Type:	page_id: unsigned int 
+			cell_id: unsigned int 
+			start_loc: unsigned long int 
+			size:	unsigned int 
+			
+	page_id			cell_id		start_loc	size
+	129				112			0x34ac25	124	
+	
+3.	
+
+Data structures in swap 
+------------------------
+
+
+
+About concept of process,variables ,instruction and data
+--------------------------------------------------------
+
+
+-----------------------------------------------------------
+============GUI(curses based) stuff=======================
+1. when we use mvwprintw(wptr,y,x,msg) then we are specifying xand y values 
+wrt to wptr not wrt to stdscr.
+
+2. Unlike previosuly planned, we will now create two info_windows -- one called 
+as General Memory Model (GMM)and other as Compressed memory Model(CMM).
+
+3. Draw all popup windows in master_cdkscreen. All other widgets unless
+	specified will be drawn in either of the 4 windows.
