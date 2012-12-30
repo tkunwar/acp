@@ -30,9 +30,26 @@ struct window_state_t {
 	int cur_x, cur_y;
 	CDKSCREEN *cdksptr;
 };
+struct acp_global_labels{
+	struct window_state_t win; //in which window does this label lie
+	int beg_x,beg_y;
+	CDKLABEL *lblptr;
+}; //to be shorted as agl
 //store acp_state information
 struct ACP_STATE {
 	struct window_state_t menubar_win, GMM_win, CMM_win, console_win;
+	// ----------global labels------------------------
+	// mostly these labels will be updated by separate threads
+	struct acp_global_labels agl_gmm_total_memory,agl_gmm_total_pages,agl_gmm_pages_used;
+	struct acp_global_labels agl_gmm_swap_max_size,agl_gmm_swap_used_space,
+			agl_gmm_swap_pageout_timelag,agl_gmm_swap_pagein_timelag;
+
+	struct acp_global_labels agl_cmm_ucm_cur_memsize,agl_cmm_ucm_max_pages,agl_cmm_ucm_pages_used;
+	struct acp_global_labels agl_cmm_cc_cur_memsize,agl_cmm_cc_stored_pages,agl_cmm_cc_cells,agl_cmm_cc_pageout_timelag,
+			agl_cmm_cc_pagein_timelag;
+	struct acp_global_labels agl_cmm_swap_max_size,agl_cmm_swap_used_space,agl_cmm_swap_pages_used,
+				agl_cmm_swap_pageout_timelag,agl_cmm_swap_pagein_timelag;
+
 	BOOL color_ok;
 	char log_buffer[LOG_BUFF_SIZE];
 	BOOL gui_ready;
@@ -93,4 +110,5 @@ void init_cdks_pointers();
 void destroy_acp_window(); //main routine for deleting windows
 void redraw_cdkscreens(); //draw cdkscrens after drawing a popup window or
 //when needed
+void print_max_console_size();
 #endif

@@ -56,6 +56,8 @@ void init_acp_state() {
 	//init cdk specific pointers
 	acp_state.console = NULL;
 	acp_state.cursesWin = NULL;
+
+	//TODO: also init global_labels
 }
 void init_window_pointers() {
 	acp_state.menubar_win.wptr = acp_state.GMM_win.wptr =
@@ -239,4 +241,8 @@ void redraw_cdkscreens() {
 	drawCDKScreen(acp_state.GMM_win.cdksptr);
 	drawCDKScreen(acp_state.CMM_win.cdksptr);
 	drawCDKScreen(acp_state.console_win.cdksptr);
+}
+
+void print_max_console_size(){
+	var_debug("Max. console size: Max X: %d Max Y: %d",COLS,LINES);
 }
