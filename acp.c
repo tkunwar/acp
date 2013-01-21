@@ -3,15 +3,31 @@
  * main c source file for acp
  */
 #include"acp.h"
+//========== routines declaration============
+/*
+ * after UI has been initialized go in a infinite loop to wait for user input
+ * accordingly process.
+ */
+void process_user_response();
+void acp_shutdown(); //close down program -- successfull termination
+void exit_acp(); //call when fatal error has occurred such as window size too
 
+//===========================================
 int main(int argc, char *argv[]) {
 	CDKparseParams(argc, argv, &acp_state.params, CDK_CLI_PARAMS);
 	//initialize acp_state
-	init_acp_state();
+	if(init_acp_state()!=ACP_OK){
+		fprintf(stderr,"acp_state_init: failed. Aborting");
+		exit(EXIT_FAILURE);
+	}
 	//initialize curses and cdk mode
-	init_curses();
+	if (init_curses()!=ACP_OK){
+		exit_acp();
+	}
 	//try to draw windows
-	acp_ui_main();
+	if (acp_ui_main()!= ACP_OK){
+		exit_acp();
+	}
 	//now wait for user input and process key-presses
 	process_user_response();
 	exit(EXIT_SUCCESS);
@@ -61,22 +77,20 @@ void acp_shutdown() {
 	close_ui();
 	exit(EXIT_SUCCESS);
 }
-/**
- * @@display_help()
- * Description: Displays help options in a popup window. Also do a redraw of
- * 				all cdkscreens since we will be displaying popup windows
- * 				in master_cdkscreen.
+
+/*
+ * @@exit_acp(char *msg)
+ * Description: Reports error but fatal ones only. After that program will exit.
+ * 				If gui_ready is set then before exiting call close_gui()
  */
-void display_help() {
-	const char *mesg[15];
-	const char *buttons[] = { "<OK>" };
-	mesg[0] = "<C>This program shows how a compressed paging mechanism has";
-	mesg[1] = "<C>advantage over traditional paging systems.";
-	mesg[2] = "<C></U>Project authors";
-	mesg[3] = "<C>Amrita,Rashmi and Varsha";
-
-	popupDialog(acp_state.master_screen, (CDK_CSTRING2) mesg, 4,
-			(CDK_CSTRING2) buttons, 1);
-	redraw_cdkscreens();
+void exit_acp() {
+	getch();
+	if (acp_state.gui_ready == TRUE) {
+		close_ui();
+	} else {
+		/* Exit CDK. */
+		destroy_cdkscreens();
+		endCDK();
+	}
+	exit(EXIT_FAILURE);
 }
-

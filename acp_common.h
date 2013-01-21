@@ -8,6 +8,7 @@
 
 #include<unistd.h>
 #include<stdlib.h>
+#include <pthread.h>
 #include<curses.h>
 
 #include "acp_config.h"
@@ -21,7 +22,7 @@ char *XCursesProgramName = "ACP";
 //some basic datatypes
 #define TRUE 1
 #define FALSE 0
-#define LOG_BUFF_SIZE 100
+#define LOG_BUFF_SIZE 200
 #define BOOL short int //represents boolean value --TRUE or FALSE
 //store windows related information
 struct window_state_t {
@@ -59,56 +60,66 @@ struct ACP_STATE {
 	CDKSWINDOW *console;
 	CDKSCREEN *master_screen;
 	WINDOW *cursesWin; //main curses window--stdscr
-} acp_state; //globally accessible -across file. access with extern
+	// mutex for getting lock if log_buffer
+	pthread_mutex_t log_buffer_lock;
+} acp_state;
 typedef enum {
 	LOG_DEBUG, LOG_WARN, LOG_ERROR
 } log_level_t;
 //some debug,warning and error macros
 //#define sdebug(s) fprintf(stderr, "\n[" __FILE__ ":%i] debug: " s "",__LINE__)
-#define sdebug(s) sprintf(acp_state.log_buffer, "[" __FILE__ ":%i] Debug: " s "",__LINE__); \
-			log_generic(acp_state.log_buffer,LOG_DEBUG);
-#define var_debug(s, ...) sprintf(acp_state.log_buffer, "[" __FILE__ ":%i] Debug: " s "" ,\
-	__LINE__,__VA_ARGS__);\
-	log_generic(acp_state.log_buffer,LOG_DEBUG);
+#define sdebug(s) pthread_mutex_lock(&acp_state.log_buffer_lock); \
+				   snprintf(acp_state.log_buffer, LOG_BUFF_SIZE,"[" __FILE__ ":%i] Debug: " s "",__LINE__); \
+				   log_generic(acp_state.log_buffer,LOG_DEBUG); \
+				   pthread_mutex_unlock(&acp_state.log_buffer_lock);
 
-#define swarn(s) sprintf(acp_state.log_buffer, "[" __FILE__ ":%i] Warning: " s "",__LINE__);\
-		log_generic(acp_state.log_buffer,LOG_WARN);
-#define var_warn(s, ...) sprintf(acp_state.log_buffer, "[" __FILE__ ":%i] Warning: " s "",\
-		__LINE__,__VA_ARGS__); \
-		log_generic(acp_state.log_buffer,LOG_WARN);
+#define var_debug(s, ...) pthread_mutex_lock(&acp_state.log_buffer_lock); \
+						   snprintf(acp_state.log_buffer,LOG_BUFF_SIZE, "[" __FILE__ ":%i] Debug: " s "" ,\
+								    __LINE__,__VA_ARGS__);\
+						   log_generic(acp_state.log_buffer,LOG_DEBUG);\
+	                       pthread_mutex_unlock(&acp_state.log_buffer_lock);
 
-#define serror(s) sprintf(acp_state.log_buffer, "[" __FILE__ ":%i] Error: " s "",__LINE__);\
-		log_generic(acp_state.log_buffer,LOG_ERROR);
-#define var_error(s, ...) sprintf(acp_state.log_buffer, "[" __FILE__ ":%i] Error: " s "",\
-		__LINE__,__VA_ARGS__);\
-		log_generic(acp_state.log_buffer,LOG_ERROR);
+#define swarn(s) pthread_mutex_lock(&acp_state.log_buffer_lock); \
+				  snprintf(acp_state.log_buffer,LOG_BUFF_SIZE, "[" __FILE__ ":%i] Warning: " s "",__LINE__);\
+		          log_generic(acp_state.log_buffer,LOG_WARN);\
+		          pthread_mutex_unlock(&acp_state.log_buffer_lock);
+
+#define var_warn(s, ...) pthread_mutex_lock(&acp_state.log_buffer_lock); \
+						  snprintf(acp_state.log_buffer,LOG_BUFF_SIZE, "[" __FILE__ ":%i] Warning: " s "",\
+		                           __LINE__,__VA_ARGS__); \
+		                  log_generic(acp_state.log_buffer,LOG_WARN);\
+		                  pthread_mutex_unlock(&acp_state.log_buffer_lock);
+
+#define serror(s) pthread_mutex_lock(&acp_state.log_buffer_lock); \
+			       snprintf(acp_state.log_buffer,LOG_BUFF_SIZE, "[" __FILE__ ":%i] Error: " s "",__LINE__);\
+		           log_generic(acp_state.log_buffer,LOG_ERROR);\
+		           pthread_mutex_unlock(&acp_state.log_buffer_lock);
+
+#define var_error(s, ...) pthread_mutex_lock(&acp_state.log_buffer_lock); \
+						   snprintf(acp_state.log_buffer,LOG_BUFF_SIZE, "[" __FILE__ ":%i] Error: " s "",\
+		                            __LINE__,__VA_ARGS__);\
+		                   log_generic(acp_state.log_buffer,LOG_ERROR);\
+	                       pthread_mutex_unlock(&acp_state.log_buffer_lock);
 
 //routines
-void exit_acp(); //call when fatal error has occurred such as window size too
-// short or could not create windows
-//call when error reporting through gui-console is not
-//available
-void init_acp_state();
+int init_acp_state();
+/*
+ * Error reporting can be done through two ways. first is to use macros
+ * which in turn use log_generic(). other is to use report_error() which accepts
+ * error codes in place of message strings. report_error() after converting the
+ * error code to a string calls log_generic().
+ */
 void log_generic(const char* msg, log_level_t log_level);
 void report_error(error_codes_t error_code); //report errors which are fatal
-
-int calculate_msg_center_position(int msg_len);
 void close_ui();
 void destroy_win(WINDOW *local_win);
 /*
  * remember that routines which name resembles those in curses package,
  * prepend their name with "acp_".
  */
-void acp_move_wxy(struct window_state_t *win, int new_y, int new_x);
-void acp_mv_wprintw(struct window_state_t *win, int new_y, int new_x,
-		char *string);
+//static void acp_mv_wprintw(struct window_state_t *win, int new_y, int new_x,
+//		char *string);
 void set_focus_to_console();
-void log_msg_to_console(const char* msg, log_level_t level);
 void destroy_cdkscreens();
-void init_window_pointers();
-void init_cdks_pointers();
-void destroy_acp_window(); //main routine for deleting windows
-void redraw_cdkscreens(); //draw cdkscrens after drawing a popup window or
-//when needed
-void print_max_console_size();
+void display_help();
 #endif

@@ -30,21 +30,7 @@ struct acp_ui_label {
 	 */
 };
 //routines
-void init_curses(); //initialize curses mode and other secondary routines
-void acp_ui_main(); //draw the curses UI for ACP
-WINDOW *create_newwin(int height, int width, int starty, int startx);
-
-void draw_windows(); //draw parent windows
-struct acp_ui_label *create_new_label(WINDOW *ptr, int beg_x, int beg_y,
-		char *caption);
-void draw_menubar();
-void calculate_padding(int *hor_padding, int *ver_padding);
-void print_window_state(struct window_state_t window);
-void init_cdk();
-void check_window_configuration();
-void draw_GMM_window();
-void draw_CMM_window();
-void create_cdkscreens();
-void draw_console();
+int init_curses(); //initialize curses mode and other secondary routines
+int acp_ui_main(); //draw the curses UI for ACP
 #endif
 

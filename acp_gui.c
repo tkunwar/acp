@@ -5,12 +5,34 @@
  *      Author: tej
  */
 #include "acp_gui.h"
-void init_curses() {
+//========== routines declarations ==============
+static WINDOW *create_newwin(int height, int width, int starty, int startx);
+
+static int draw_windows(); //draw parent windows
+//static struct acp_ui_label *create_new_label(WINDOW *ptr, int beg_x, int beg_y,
+//		char *caption);
+static void draw_menubar();
+static void calculate_padding(int *hor_padding, int *ver_padding);
+//static void print_window_state(struct window_state_t window);
+static void init_cdk();
+static int check_window_configuration();
+static void draw_GMM_window();
+static void draw_CMM_window();
+static void create_cdkscreens();
+static void draw_console();
+//===============================================
+int init_curses() {
 	//master curses window
 	acp_state.cursesWin = initscr();
+	if (acp_state.cursesWin == NULL) {
+		fprintf(stderr, "init_curses(): initscr() failed. Aborting");
+		return ACP_ERR_INIT_UI;
+	}
 	//enusre that we do not have any window configuration mismatch before we
 	//proceed any futher
-	check_window_configuration();
+	if (check_window_configuration() != ACP_OK) {
+		return ACP_ERR_INIT_UI;
+	}
 
 	//init cdk specific routines
 	init_cdk();
@@ -23,14 +45,18 @@ void init_curses() {
 		keypad(stdscr, TRUE); //enable to accept key presses like F1,F2 etc.
 	if (NOECHO)
 		noecho(); //disable echoing
+
+	return ACP_OK;
 }
 /**
  * @@draw_windows()
  * Description: draw three master windows. return error code accordingly.
  */
-void acp_ui_main() {
+int acp_ui_main() {
 	//first draw parent windows
-	draw_windows();
+	if (draw_windows()!=ACP_OK){
+		return ACP_ERR_DRAW_WINDOWS;
+	}
 	create_cdkscreens();
 	//now display intial display screen for these windows
 	draw_menubar();
@@ -41,8 +67,9 @@ void acp_ui_main() {
 	//set gui_ok in acp_state
 	acp_state.gui_ready = TRUE;
 	//every thing is fine so far
+	return ACP_OK;
 }
-void create_cdkscreens() {
+static void create_cdkscreens() {
 	//by now we have window pointers, lets create cdkscreens out of them.
 	acp_state.console_win.cdksptr = initCDKScreen(acp_state.console_win.wptr);
 	acp_state.menubar_win.cdksptr = initCDKScreen(acp_state.menubar_win.wptr);
@@ -52,7 +79,7 @@ void create_cdkscreens() {
 	//also create the master cdkscreen which will be used for popup messages.
 	acp_state.master_screen = initCDKScreen(acp_state.cursesWin);
 }
-void draw_windows() {
+static int draw_windows() {
 	/*
 	 * 1.	calculate size of these three windows. Size of menubar and console
 	 * 		are provided in acp_config.h.
@@ -81,8 +108,10 @@ void draw_windows() {
 	startx = horizontal_padding;
 	starty = vertical_padding;
 	if ((acp_state.menubar_win.wptr = create_newwin(height, width, starty,
-			startx)) == NULL)
-		exit_acp("Error: failed to create window:menubar");
+			startx)) == NULL){
+		serror("Error: failed to create window:menubar");
+		return ACP_ERR_DRAW_WINDOWS;
+	}
 	//save the starting coordinates of menubar
 	acp_state.menubar_win.beg_x = startx;
 	acp_state.menubar_win.beg_y = starty;
@@ -98,8 +127,10 @@ void draw_windows() {
 	width = MIN_COLS;
 
 	if ((acp_state.GMM_win.wptr = create_newwin(height, width, starty, startx))
-			== NULL)
-		exit_acp("Error: failed to create window:info_win");
+			== NULL){
+		serror("Error: failed to create window:info_win");
+		return ACP_ERR_DRAW_WINDOWS;
+	}
 	acp_state.GMM_win.beg_x = startx;
 	acp_state.GMM_win.beg_y = starty;
 	acp_state.GMM_win.cur_x = startx;
@@ -114,8 +145,10 @@ void draw_windows() {
 	width = MIN_COLS;
 
 	if ((acp_state.CMM_win.wptr = create_newwin(height, width, starty, startx))
-			== NULL)
-		exit_acp("Error: failed to create window:info_win");
+			== NULL){
+		serror("Error: failed to create window:info_win");
+		return ACP_ERR_DRAW_WINDOWS;
+	}
 	acp_state.CMM_win.beg_x = startx;
 	acp_state.CMM_win.beg_y = starty;
 	acp_state.CMM_win.cur_x = startx;
@@ -132,11 +165,13 @@ void draw_windows() {
 	width = MIN_COLS;
 
 	if ((acp_state.console_win.wptr = create_newwin(height, width, starty,
-			startx)) == NULL)
-		exit_acp("Error: failed to create window:console_win");
-
+			startx)) == NULL){
+		serror("Error: failed to create window:console_win");
+		return ACP_ERR_DRAW_WINDOWS;
+	}
+	return ACP_OK;
 }
-WINDOW *create_newwin(int height, int width, int starty, int startx) {
+static WINDOW *create_newwin(int height, int width, int starty, int startx) {
 	WINDOW *local_win;
 
 	local_win = newwin(height, width, starty, startx);
@@ -152,7 +187,7 @@ WINDOW *create_newwin(int height, int width, int starty, int startx) {
 	return local_win;
 }
 
-void draw_menubar() {
+static void draw_menubar() {
 	CDKLABEL *lblHelp;
 	CDKLABEL *lblConfig;
 	CDKLABEL *lblExit;
@@ -193,28 +228,27 @@ void draw_menubar() {
 //			acp_state.menubar_win.beg_x, acp_state.menubar_win.beg_y);
 }
 
-void print_window_state(struct window_state_t window) {
-	var_debug("draw_info: window_state: beg_y %d beg_x %d width %d height %d",
-			window.beg_y, window.beg_x, window.width, window.height);
-}
-void calculate_padding(int *hor_padding, int *ver_padding) {
+//static void print_window_state(struct window_state_t window) {
+//	var_debug("draw_info: window_state: beg_y %d beg_x %d width %d height %d",
+//			window.beg_y, window.beg_x, window.width, window.height);
+//}
+static void calculate_padding(int *hor_padding, int *ver_padding) {
 	*hor_padding = (COLS - MIN_COLS) / 2;
 	*ver_padding = (LINES - MIN_LINES) / 2;
 	acp_state.hori_pad = *hor_padding;
 	acp_state.vert_pad = *ver_padding;
 }
-void init_cdk() {
+static void init_cdk() {
 	//for all the windows that we want lets create cdkscreen out of them
-
-//	acp_state.console_cdkscreen = initCDKScreen(acp_state.cursesWin);
 	initCDKColor();
 }
 
-void check_window_configuration() {
+static int check_window_configuration() {
 	int min_req_height;
 	//parent window size check
 	if (COLS < MIN_COLS || LINES < MIN_LINES) {
 		report_error(ACP_ERR_WINDOW_SIZE_TOO_SHORT);
+		return ACP_ERR_WINDOW_SIZE_TOO_SHORT;
 	}
 	/*
 	 * ensure that window sizes are correctly speccified. we check if we
@@ -230,10 +264,12 @@ void check_window_configuration() {
 			+ STATUS_WINDOW_SIZE + 1 + 3;
 	if (MIN_LINES < min_req_height) {
 		report_error(ACP_ERR_WINDOW_CONFIG_MISMATCH);
+		return ACP_ERR_WINDOW_CONFIG_MISMATCH;
 	}
+	return ACP_OK;
 }
 
-void draw_GMM_window() {
+static void draw_GMM_window() {
 	const char *lblText[2];
 	CDKLABEL *lblTitle = NULL;
 	int x_displacement = 0; //used for drawing actual label
@@ -406,7 +442,7 @@ void draw_GMM_window() {
 	acp_state.agl_gmm_swap_pagein_timelag.win = acp_state.GMM_win;
 
 }
-void draw_CMM_window() {
+static void draw_CMM_window() {
 	//set the title bar
 	const char *lblText[2];
 	CDKLABEL *lblTitle = NULL;
@@ -668,7 +704,7 @@ void draw_CMM_window() {
 	acp_state.agl_cmm_swap_pagein_timelag.beg_y = acp_state.CMM_win.cur_y + 4;
 	acp_state.agl_cmm_swap_pagein_timelag.win = acp_state.CMM_win;
 }
-void draw_console() {
+static void draw_console() {
 	const char *console_title = "<C></B/U/7>Log Window";
 	/* Create the scrolling window. */
 	acp_state.console = newCDKSwindow(acp_state.console_win.cdksptr,

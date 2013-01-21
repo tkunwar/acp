@@ -5,38 +5,27 @@
  *      Author: tej
  */
 #include "acp_common.h"
-/*
- * @@exit_acp(char *msg)
- * Description: Reports error but fatal ones only. After that program will exit.
- * 				If gui_ready is set then before exiting call close_gui()
- */
-void exit_acp(const char *msg) {
-
-	var_error("%s", msg);
-	getch();
-
-	if (acp_state.gui_ready == TRUE) {
-		close_ui();
-	} else {
-		/* Exit CDK. */
-		destroy_cdkscreens();
-		endCDK();
-	}
-	exit(EXIT_FAILURE);
-}
+//=========== routines declaration============
+static int calculate_msg_center_position(int msg_len);
+static void log_msg_to_console(const char* msg, log_level_t level);
+static void init_window_pointers();
+static void init_cdks_pointers();
+static void destroy_acp_window(); //main routine for deleting windows
+static void redraw_cdkscreens(); //draw cdkscrens after drawing a popup window or
+//===========================================
 void destroy_cdkscreens() {
 	destroyCDKScreen(acp_state.menubar_win.cdksptr);
 	destroyCDKScreen(acp_state.GMM_win.cdksptr);
 	destroyCDKScreen(acp_state.CMM_win.cdksptr);
 	destroyCDKScreen(acp_state.console_win.cdksptr);
 }
-void init_acp_state() {
+int init_acp_state() {
 	//reset the acp_state
 	init_window_pointers();
 	init_cdks_pointers();
 	acp_state.color_ok = FALSE;
-	strcpy(acp_state.log_buffer, "acp_init: In progress");
 	acp_state.gui_ready = FALSE;
+	acp_state.cursesWin = NULL;
 	/*
 	 * now for all three windows we set the cur_x and cur_y to 0
 	 */
@@ -57,13 +46,19 @@ void init_acp_state() {
 	acp_state.console = NULL;
 	acp_state.cursesWin = NULL;
 
+	//init the log_buffer_lock
+	if ((pthread_mutex_init(&acp_state.log_buffer_lock, NULL)) != 0) {
+		fprintf(stderr, "\nprocess1_mutex_init failed");
+		return ACP_ERR_ACP_STATE_INIT;
+	}
 	//TODO: also init global_labels
+	return ACP_OK;
 }
-void init_window_pointers() {
+static void init_window_pointers() {
 	acp_state.menubar_win.wptr = acp_state.GMM_win.wptr =
 			acp_state.CMM_win.wptr = acp_state.console_win.wptr = NULL;
 }
-void init_cdks_pointers() {
+static void init_cdks_pointers() {
 	acp_state.menubar_win.cdksptr = acp_state.GMM_win.cdksptr =
 			acp_state.CMM_win.cdksptr = acp_state.console_win.cdksptr = NULL;
 	acp_state.master_screen = NULL;
@@ -84,7 +79,6 @@ void log_generic(const char* msg, log_level_t log_level) {
 	/*
 	 * if previously a message was logged, then logging this msg will
 	 * corrupt the display. so we will delete this line and write the msg
-	 *
 	 */
 	move(LINES-1, 0);
 	deleteln();
@@ -98,23 +92,19 @@ void log_generic(const char* msg, log_level_t log_level) {
  * Description : returns the x position where msg should be displayed such that
  * 				it appears in the center location
  */
-int calculate_msg_center_position(int msg_len) {
+static int calculate_msg_center_position(int msg_len) {
 	return ((MIN_COLS - msg_len) / 2);
 }
 
 /**
  * @@report_error(error_code)
- * Description: concerts error codes into understandable error strings.
- * 				Note that not all error might lead to program termination.
- * 				For those which might, route the msg string to exit_acp()
+ * Description: converts error codes into understandable error strings.
  */
 void report_error(error_codes_t error_code) {
 	char msg[LOG_BUFF_SIZE];
-	int exit_needed = 0;
 	switch (error_code) {
-	case ACP_ERR_INIT_GUI:
+	case ACP_ERR_INIT_UI:
 		snprintf(msg, LOG_BUFF_SIZE, "Failed to initialize curses UI!");
-		exit_needed = 1;
 		break;
 	case ACP_ERR_NO_COLOR:
 		snprintf(msg, LOG_BUFF_SIZE, "No color support !");
@@ -126,16 +116,13 @@ void report_error(error_codes_t error_code) {
 		snprintf(msg, LOG_BUFF_SIZE,
 				"Window size too short.Must be %d LINESx %d COLS!", MIN_LINES,
 				MIN_COLS);
-		exit_needed = 1;
 		break;
 	case ACP_ERR_CDK_CONSOLE_DRAW:
 		snprintf(msg, LOG_BUFF_SIZE, "Failed to draw CDK window: console");
-		exit_needed = 1;
 		break;
 	case ACP_ERR_WINDOW_CONFIG_MISMATCH:
 		snprintf(msg, LOG_BUFF_SIZE,
 				"Window configuration mismatch, check acp_config.h");
-		exit_needed = 1;
 		break;
 	case ACP_ERR_GENERIC:
 		snprintf(msg, LOG_BUFF_SIZE, "An unknown error has occurred!");
@@ -144,11 +131,8 @@ void report_error(error_codes_t error_code) {
 		snprintf(msg, LOG_BUFF_SIZE, "An unknown error has occurred!");
 		break;
 	}
-	if (exit_needed)
-		exit_acp(msg);
-	else
-		//termination not needed so just report the error
-		var_error("%s", msg);
+	//just report the error
+	log_generic(msg,LOG_ERROR);
 }
 void close_ui() {
 	sdebug("Closing down UI");
@@ -161,12 +145,11 @@ void close_ui() {
 	getch();
 
 	/* Exit CDK. */
-//	destroy_cdkscreens();
 	endCDK();
 	endwin();
 }
 
-void destroy_acp_window() {
+static void destroy_acp_window() {
 	//destroy window as well as evrything it contains--label,cdkscreens,widgets
 	//etc.
 	//order can be widgets->cdkscreen->window_pointers
@@ -182,15 +165,19 @@ void destroy_acp_window() {
 	delwin(acp_state.console_win.wptr);
 
 }
-void acp_mv_wprintw(struct window_state_t *win, int new_y, int new_x,
-		char *string) {
-	//update cur_x and cur_y
-	win->cur_x = new_x;
-	win->cur_y = new_y;
-
-	//now at this new position display the string
-	mvwprintw(win->wptr, win->cur_y, win->cur_x, "%s", string);
-}
+/*
+ * acp_mv_wprintw() is not being used anywhere. so we will comment in case we
+ * might use it someday
+ */
+//static void acp_mv_wprintw(struct window_state_t *win, int new_y, int new_x,
+//		char *string) {
+//	//update cur_x and cur_y
+//	win->cur_x = new_x;
+//	win->cur_y = new_y;
+//
+//	//now at this new position display the string
+//	mvwprintw(win->wptr, win->cur_y, win->cur_x, "%s", string);
+//}
 /**
  * @@set_focus_to_console()
  * Description: set focus to CDK console
@@ -204,7 +191,7 @@ void set_focus_to_console() {
  * Description: log this message to CDK console that we have created.When gui
  * 				is fully ready, then log_genric() will call this routine only.
  */
-void log_msg_to_console(const char *msg, log_level_t log_level) {
+static void log_msg_to_console(const char *msg, log_level_t log_level) {
 	char log_msg[LOG_BUFF_SIZE];
 	/*
 	 * color scheme: <C> is for centering
@@ -232,17 +219,30 @@ void log_msg_to_console(const char *msg, log_level_t log_level) {
 		snprintf(log_msg, LOG_BUFF_SIZE, "<C>%s", msg);
 		break;
 	}
-
 	addCDKSwindow(acp_state.console, log_msg, BOTTOM);
 }
 
-void redraw_cdkscreens() {
+static void redraw_cdkscreens() {
 	drawCDKScreen(acp_state.menubar_win.cdksptr);
 	drawCDKScreen(acp_state.GMM_win.cdksptr);
 	drawCDKScreen(acp_state.CMM_win.cdksptr);
 	drawCDKScreen(acp_state.console_win.cdksptr);
 }
+/**
+ * @@display_help()
+ * Description: Displays help options in a popup window. Also do a redraw of
+ * 				all cdkscreens since we will be displaying popup windows
+ * 				in master_cdkscreen.
+ */
+void display_help() {
+	const char *mesg[15];
+	const char *buttons[] = { "<OK>" };
+	mesg[0] = "<C>This program shows how a compressed paging mechanism has";
+	mesg[1] = "<C>advantage over traditional paging systems.";
+	mesg[2] = "<C></U>Project authors";
+	mesg[3] = "<C>Amrita,Rashmi and Varsha";
 
-void print_max_console_size(){
-	var_debug("Max. console size: Max X: %d Max Y: %d",COLS,LINES);
+	popupDialog(acp_state.master_screen, (CDK_CSTRING2) mesg, 4,
+			(CDK_CSTRING2) buttons, 1);
+	redraw_cdkscreens();
 }
