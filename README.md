@@ -10,10 +10,10 @@ External Package depedencies:
 1. Curses Library:
 	ACP ui is a curses-based UI system for linux. On a ubuntu machine install
 	it using:
-	
-	'''bash
+
+	```bash
 	$sudo apt-get install ncurses5-dev
-	'''
+	```
 
 	Also install if any related package dependency is suggested by packager.
 
