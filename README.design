@@ -289,3 +289,27 @@ as General Memory Model (GMM)and other as Compressed memory Model(CMM).
 
 3. Draw all popup windows in master_cdkscreen. All other widgets unless
 	specified will be drawn in either of the 4 windows.
+
+================ Random code snippets ======================
+1. sleeping for less than 1 seconds
+	struct timeval tv;
+	tv.tv_sec = 1;
+	tv.tv_usec = 500000;
+	select(0, NULL, NULL, NULL, &tv);
+
+	Also can try:
+		poll(0,0,milliseconds)
+	Note that select() has limitations in how many descriptors can be used 
+	by a process. However, it is also quite portable. But poll() is higly efficient 
+	since there is no limitations about fd_size and also iterating on a list
+	of descriptors to find which descriptor has an event is quite cheap.
+
+	also usleep(microseconds) allows to sleep for microsecond intervals.
+	
+2. cleanup routines can be registerd as callback routines.A Unix program, 
+	for example, might not want to terminate immediately when it receives
+	SIGTERM; to make sure things get taken care of, it would register the
+	cleanup function as a callback.
+
+3. Even better than epoll() would be libev() which is a high level routine
+	for event based I/O.
