@@ -8,7 +8,7 @@
 #include "acp_config.h"
 
 /**
- * Initialise acp_config structure with default values
+ * @brief Initialise acp_config structure with default values
  */
 static void init_acp_config() {
 	acp_config.cell_compaction_enabled = true;
@@ -16,7 +16,8 @@ static void init_acp_config() {
 	acp_config.swappiness = 70;
 }
 /**
- * Display the configuration that has been parsed from the configuration file.
+ * @brief Display the configuration that has been parsed from the configuration
+ * file.
  */
 static void print_loaded_configs(){
 	fprintf(stderr,"\nLoaded configs:");
@@ -30,6 +31,8 @@ static void print_loaded_configs(){
 	fprintf(stderr,"\n");
 }
 /**
+ * @brief Read configuration file
+ *
  * Main routine for reading configuration file and save the information in
  * acp_config declared in acp_config.h .
  * @return Return ACP_OK if everything went OK else an error code.
@@ -57,7 +60,8 @@ int load_config() {
 			config_fallback_enabled = true;
 		}
 	}else{
-		fprintf(stderr,"\nWarning: Field conf_fallback_enabled not found in config file");
+		fprintf(stderr,"\nWarning: Field conf_fallback_enabled not found in "
+				"config file");
 	}
 	//read max_buffer_size
 	if (config_lookup_int(&cfg, "max_buffer_size", &val)) {
@@ -67,26 +71,30 @@ int load_config() {
 			if (config_fallback_enabled == false) {
 				// this is unacceptable, abort
 				fprintf(stderr,
-						"\nConfiguration prohibits using default values. Exiting!");
+						"\nConfiguration prohibits using default values."
+						" Exiting!");
 				return ACP_ERR_CONFIG_ABORT;
 			}
 		} else {
 			acp_config.max_buff_size = val;
 		}
 	}else{
-		fprintf(stderr,"\nWarning: Field max_buffer_size not found in config file!");
+		fprintf(stderr,"\nWarning: Field max_buffer_size not found in config"
+				" file!");
 	}
 	//read swappiness field
 	if (config_lookup_int(&cfg, "swappiness", &val)) {
 		if (val >= 80 && val <= 95) {
 			fprintf(stderr,
-					"\nWarning: swappiness value is too high.\nPerformance may be affected!");
+					"\nWarning: swappiness value is too high.\nPerformance may "
+					"be affected!");
 			acp_config.swappiness = val;
 		} else if (val > 95) {
 			fprintf(stderr, "\nError: swappiness value is too high.");
 			if (config_fallback_enabled == false) {
 				fprintf(stderr,
-						"\nConfiguration prohibits using default values. Exiting!");
+						"\nConfiguration prohibits using default values."
+						" Exiting!");
 				return ACP_ERR_CONFIG_ABORT;
 			}
 		}
@@ -106,9 +114,10 @@ int load_config() {
 			}
 		}
 		else{
-			fprintf(stderr,"\nWarning: Field cell_compaction_enabled not found in config file!");
+			fprintf(stderr,"\nWarning: Field cell_compaction_enabled not found"
+					" in config file!");
 		}
 	config_destroy(&cfg);
-	print_loaded_configs();
+//	print_loaded_configs();
 	return ACP_OK;
 }

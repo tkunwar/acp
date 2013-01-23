@@ -209,6 +209,8 @@ void set_focus_to_console() {
 }
 
 /**
+ * @brief log message to console window
+ *
  * Log a message to CDK console that we have created. When UI is fully ready,
  * then log_generic() will call this routine only.
  * @param msg The message which is to be logged
@@ -245,6 +247,8 @@ static void log_msg_to_console(const char *msg, log_level_t log_level) {
     addCDKSwindow(acp_state.console, log_msg, BOTTOM);
 }
 /**
+ * @brief Redraw cdk screens.
+ *
  * After a popup screen is drawn in CDK, it is necessary to redraw under-
  * lying CDK windows otherwise they will not be displayed on the screen and
  * program is left in an inconsistent state.
@@ -256,6 +260,8 @@ static void redraw_cdkscreens() {
     drawCDKScreen(acp_state.console_win.cdksptr);
 }
 /**
+ * @brief Display help options
+ *
  * Displays help options in a popup window. Also do a redraw of all cdkscreens
  * since we will be displaying popup windows in master_cdkscreen.
  */

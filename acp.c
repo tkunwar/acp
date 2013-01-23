@@ -27,16 +27,16 @@ int main(int argc, char *argv[]) {
 	if (load_config() == ACP_ERR_CONFIG_ABORT) {
 		exit(EXIT_FAILURE);
 	}
-//    //initialize curses and cdk mode
-//    if (init_curses()!=ACP_OK) {
-//        exit_acp();
-//    }
-//    //try to draw windows
-//    if (acp_ui_main()!= ACP_OK) {
-//        exit_acp();
-//    }
-//    //now wait for user input and process key-presses
-//    process_user_response();
+    //initialize curses and cdk mode
+    if (init_curses()!=ACP_OK) {
+        exit_acp();
+    }
+    //try to draw windows
+    if (acp_ui_main()!= ACP_OK) {
+        exit_acp();
+    }
+    //now wait for user input and process key-presses
+    process_user_response();
 	exit(EXIT_SUCCESS);
 }
 

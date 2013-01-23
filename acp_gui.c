@@ -18,7 +18,7 @@ static void create_cdkscreens();
 static void draw_console();
 //===============================================
 /**
- * Initialise curses mode for acp.
+ * @brief Initialise curses mode for acp.
  * @return Return ACP_OK if successful else an error code.
  */
 int init_curses() {
@@ -49,6 +49,8 @@ int init_curses() {
     return ACP_OK;
 }
 /**
+ * @brief Main UI routine
+ *
  * Draw master windows including menubar,gmm_window,cmm_window and console
  * by calling helper routines.
  * @return ACP_OK if successful else an error code.
@@ -71,7 +73,9 @@ int acp_ui_main() {
     return ACP_OK;
 }
 /**
- * @brief Create CDK screens. CDK screen is the actual window segment to which we write
+ * @brief Create CDK screens.
+ *
+ * CDK screen is the actual window segment to which we write
  * in CDK.
  */
 static void create_cdkscreens() {
@@ -85,7 +89,7 @@ static void create_cdkscreens() {
     acp_state.master_screen = initCDKScreen(acp_state.cursesWin);
 }
 /**
- * Draw master windows. Actual implementation.
+ * @brief Draw master windows. Actual implementation.
  * @return ACP_OK if all ok else an error code
  */
 static int draw_windows() {
@@ -180,6 +184,14 @@ static int draw_windows() {
     }
     return ACP_OK;
 }
+/**
+ * @brief Creates a new curses window of specified parameters.
+ * @param height height of window in no. of lines
+ * @param width width of window in no. of columns
+ * @param starty starting x-coordinate of this window
+ * @param startx starting y-coordinate of this window
+ * @return
+ */
 static WINDOW *create_newwin(int height, int width, int starty, int startx) {
     WINDOW *local_win;
 
@@ -195,7 +207,12 @@ static WINDOW *create_newwin(int height, int width, int starty, int startx) {
     wrefresh(local_win); /* Show that box 		*/
     return local_win;
 }
-
+/**
+ * @brief Draws the menubar window.
+ *
+ * Menubar window has the menu controls such as F2,F3 and F4 for
+ * help,config and exiting respectively.
+ */
 static void draw_menubar() {
     CDKLABEL *lblHelp;
     CDKLABEL *lblConfig;
@@ -233,25 +250,32 @@ static void draw_menubar() {
                           acp_state.menubar_win.cur_x, acp_state.menubar_win.cur_y,
                           (CDK_CSTRING2) lblText, 1, FALSE, FALSE);
     drawCDKLabel(lblExit, ObjOf (lblExit)->box);
-//	var_debug("menubar beg_x: %d beg_y: %d",
-//			acp_state.menubar_win.beg_x, acp_state.menubar_win.beg_y);
 }
-
-//static void print_window_state(struct window_state_t window) {
-//	var_debug("draw_info: window_state: beg_y %d beg_x %d width %d height %d",
-//			window.beg_y, window.beg_x, window.width, window.height);
-//}
+/**
+ * @brief Calculates horizontal and vertical padding
+ *
+ * Paddings are needed to ensure that our curses UI is positioned in
+ * center of terminal.
+ * @param hor_padding variable where calculated horizontal padding will be stored
+ * @param ver_padding variable where calculated vertical padding will be stored
+ */
 static void calculate_padding(int *hor_padding, int *ver_padding) {
     *hor_padding = (COLS - MIN_COLS) / 2;
     *ver_padding = (LINES - MIN_LINES) / 2;
     acp_state.hori_pad = *hor_padding;
     acp_state.vert_pad = *ver_padding;
 }
+/**
+ * @brief Initialize CDK specific features
+ */
 static void init_cdk() {
     //for all the windows that we want lets create cdkscreen out of them
     initCDKColor();
 }
-
+/**
+ * @brief Check if specified window dimensions are correct.
+ * @return ACP_OK if window specification is OK else return an error code
+ */
 static int check_window_configuration() {
     int min_req_height;
     //parent window size check
@@ -277,7 +301,10 @@ static int check_window_configuration() {
     }
     return ACP_OK;
 }
-
+/**
+ * @brief Draws GMM window and its components including label-captions and
+ * 			labels.
+ */
 static void draw_GMM_window() {
     const char *lblText[2];
     CDKLABEL *lblTitle = NULL;
@@ -451,6 +478,9 @@ static void draw_GMM_window() {
     acp_state.agl_gmm_swap_pagein_timelag.win = acp_state.GMM_win;
 
 }
+/**
+ * @brief Draws CMM window and its sub-components.
+ */
 static void draw_CMM_window() {
     //set the title bar
     const char *lblText[2];
@@ -713,6 +743,9 @@ static void draw_CMM_window() {
     acp_state.agl_cmm_swap_pagein_timelag.beg_y = acp_state.CMM_win.cur_y + 4;
     acp_state.agl_cmm_swap_pagein_timelag.win = acp_state.CMM_win;
 }
+/**
+ * @brief Draws console window.
+ */
 static void draw_console() {
     const char *console_title = "<C></B/U/7>Log Window";
     /* Create the scrolling window. */
