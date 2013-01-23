@@ -23,8 +23,8 @@ int init_acp_state() {
     //reset the acp_state
     init_window_pointers();
     init_cdks_pointers();
-    acp_state.color_ok = FALSE;
-    acp_state.gui_ready = FALSE;
+    acp_state.color_ok = false;
+    acp_state.gui_ready = false;
     acp_state.cursesWin = NULL;
     /*
      * now for all three windows we set the cur_x and cur_y to 0
@@ -139,7 +139,7 @@ void close_ui() {
     //delete windows
     destroy_acp_window();
     //all windows and associated cdkscreens are gone now
-    acp_state.gui_ready = FALSE;
+    acp_state.gui_ready = false;
 
     sdebug("Press any key to exit!!");
     getch();
