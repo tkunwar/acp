@@ -4,15 +4,19 @@ CC=gcc
 
 #The below line is for debugging
 #CFLAGS=-I. -ggdb -Wall -D_FILE_OFFSET_BITS=64
-CFLAGS=-Wall -g -lcdk -lncurses -lconfig
-
-LIBS=
+# when linking with libconfig in shared mode
+# use this 
+# CFLAGS=-Wall -g -lcdk -lncurses -lconfig
+# when using libconfig in static linking mode 
+# use this
+CFLAGS=-Wall -g -lcdk -lncurses
+LIBS=libconfig.a
 
 #Uncomment the line below to compile on Mac
 #LIBS=-liconv
 all:acp
 acp: acp.o acp_gui.o acp_common.o acp_config.o
-	$(CC) $(LIBS) -o $@ $^ $(CFLAGS)
+	$(CC) -o $@ $^ $(LIBS) $(CFLAGS)
 
 %.o: %.c %.h
 	$(CC) -c $*.c $(CFLAGS)
