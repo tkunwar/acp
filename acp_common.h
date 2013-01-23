@@ -6,24 +6,30 @@
 #ifndef _ACP_COMMON_H_
 #define _ACP_COMMON_H_
 
+#ifndef ACP_DTYPES_H_
+	#include "acp_dtypes.h"
+#endif
+
 #include<unistd.h>
 #include<stdlib.h>
 #include <pthread.h>
 #include<curses.h>
-#include <libconfig.h>
+
 #include "acp_config.h"
 #include "acp_error.h"
 #include "cdk_wrap.h"
+
+
 
 #ifdef HAVE_XCURSES
 char *XCursesProgramName = "ACP";
 #endif
 
 //some basic datatypes
-#define TRUE 1
-#define FALSE 0
+
+
+
 #define LOG_BUFF_SIZE 200
-#define BOOL short int //represents boolean value --TRUE or FALSE
 //store windows related information
 struct window_state_t {
     WINDOW *wptr;
@@ -51,9 +57,9 @@ struct ACP_STATE {
     struct acp_global_labels agl_cmm_swap_max_size,agl_cmm_swap_used_space,agl_cmm_swap_pages_used,
             agl_cmm_swap_pageout_timelag,agl_cmm_swap_pagein_timelag;
 
-    BOOL color_ok;
+    bool color_ok;
     char log_buffer[LOG_BUFF_SIZE];
-    BOOL gui_ready;
+    bool gui_ready;
     int hori_pad, vert_pad;
     //cdk specific window pointers
     CDK_PARAMS params;
@@ -63,9 +69,7 @@ struct ACP_STATE {
     // mutex for getting lock if log_buffer
     pthread_mutex_t log_buffer_lock;
 } acp_state;
-typedef enum {
-    LOG_DEBUG, LOG_WARN, LOG_ERROR
-} log_level_t;
+
 //some debug,warning and error macros
 //#define sdebug(s) fprintf(stderr, "\n[" __FILE__ ":%i] debug: " s "",__LINE__)
 #define sdebug(s) pthread_mutex_lock(&acp_state.log_buffer_lock); \
