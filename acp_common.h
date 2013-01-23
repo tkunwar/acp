@@ -1,7 +1,7 @@
-/*
- * acp_common.h
- *
- *  Created on: Nov 8, 2012
+/**
+ * @file acp_common.h
+ * @brief header file for acp_common.c
+ * @author Tej
  */
 #ifndef _ACP_COMMON_H_
 #define _ACP_COMMON_H_
@@ -25,24 +25,37 @@
 char *XCursesProgramName = "ACP";
 #endif
 
-//some basic datatypes
-
-
-
+/**
+ * @def LOG_BUFF_SIZE
+ * @brief Size of log buffer used in logging macros.
+ */
 #define LOG_BUFF_SIZE 200
-//store windows related information
+/**
+ * @struct window_state_t
+ * @brief A structure for holding window related information.
+ */
 struct window_state_t {
     WINDOW *wptr;
     int beg_x, beg_y, height, width; //window coordinates
     int cur_x, cur_y;
     CDKSCREEN *cdksptr;
 };
+/**
+ * @struct acp_global_labels
+ * @brief Structure for global labels that will display information on the
+ * 	screen.
+ */
 struct acp_global_labels {
     struct window_state_t win; //in which window does this label lie
     int beg_x,beg_y;
     CDKLABEL *lblptr;
-}; //to be shorted as agl
-//store acp_state information
+};
+/**
+ * @struct ACP_STATE
+ * @brief Main structure which holds state information for acp. Almost all
+ * major variables needed by acp are present in this structure. Note that
+ * variables in this structure are accessible throughout acp.
+ */
 struct ACP_STATE {
     struct window_state_t menubar_win, GMM_win, CMM_win, console_win;
     // ----------global labels------------------------
@@ -71,58 +84,90 @@ struct ACP_STATE {
 } acp_state;
 
 //some debug,warning and error macros
-//#define sdebug(s) fprintf(stderr, "\n[" __FILE__ ":%i] debug: " s "",__LINE__)
+/**
+ * @def sdebug(s)
+ * @brief Debug macro which accepts a single string. Message is expanded to
+ * include location of call in the source file along with other information.
+ * The message after expansion is saved in a global log buffer and then finally
+ * passed to log_generic().
+ */
 #define sdebug(s) pthread_mutex_lock(&acp_state.log_buffer_lock); \
 				   snprintf(acp_state.log_buffer, LOG_BUFF_SIZE,"[" __FILE__ ":%i] Debug: " s "",__LINE__); \
 				   log_generic(acp_state.log_buffer,LOG_DEBUG); \
 				   pthread_mutex_unlock(&acp_state.log_buffer_lock);
-
+/**
+ * @def var_debug(s, ...)
+ * @brief Debug macro which accepts multiple parameters. Message is expanded to
+ * include location of call in the source file along with other information.
+ * The message after expansion is saved in a global log buffer and then finally
+ * passed to log_generic().
+ */
 #define var_debug(s, ...) pthread_mutex_lock(&acp_state.log_buffer_lock); \
 						   snprintf(acp_state.log_buffer,LOG_BUFF_SIZE, "[" __FILE__ ":%i] Debug: " s "" ,\
 								    __LINE__,__VA_ARGS__);\
 						   log_generic(acp_state.log_buffer,LOG_DEBUG);\
 	                       pthread_mutex_unlock(&acp_state.log_buffer_lock);
-
+/**
+ * @def swarn(s)
+ * @brief Warning macro which accepts single string. Message is expanded to
+ * include location of call in the source file along with other information.
+ * The message after expansion is saved in a global log buffer and then finally
+ * passed to log_generic().
+ */
 #define swarn(s) pthread_mutex_lock(&acp_state.log_buffer_lock); \
 				  snprintf(acp_state.log_buffer,LOG_BUFF_SIZE, "[" __FILE__ ":%i] Warning: " s "",__LINE__);\
 		          log_generic(acp_state.log_buffer,LOG_WARN);\
 		          pthread_mutex_unlock(&acp_state.log_buffer_lock);
-
+/**
+ * @def var_warn(s,...)
+ * @brief Warning macro which accepts multiple parameters. Message is expanded to
+ * include location of call in the source file along with other information.
+ * The message after expansion is saved in a global log buffer and then finally
+ * passed to log_generic().
+ */
 #define var_warn(s, ...) pthread_mutex_lock(&acp_state.log_buffer_lock); \
 						  snprintf(acp_state.log_buffer,LOG_BUFF_SIZE, "[" __FILE__ ":%i] Warning: " s "",\
 		                           __LINE__,__VA_ARGS__); \
 		                  log_generic(acp_state.log_buffer,LOG_WARN);\
 		                  pthread_mutex_unlock(&acp_state.log_buffer_lock);
-
+/**
+ * @def serror(s)
+ * @brief Error macro which accepts single string. Message is expanded to
+ * include location of call in the source file along with other information.
+ * The message after expansion is saved in a global log buffer and then finally
+ * passed to log_generic().
+ */
 #define serror(s) pthread_mutex_lock(&acp_state.log_buffer_lock); \
 			       snprintf(acp_state.log_buffer,LOG_BUFF_SIZE, "[" __FILE__ ":%i] Error: " s "",__LINE__);\
 		           log_generic(acp_state.log_buffer,LOG_ERROR);\
 		           pthread_mutex_unlock(&acp_state.log_buffer_lock);
-
+/**
+ * @def var_error(s,...)
+ * @brief Error macro which accepts variable parameters. Message is expanded to
+ * include location of call in the source file along with other information.
+ * The message after expansion is saved in a global log buffer and then finally
+ * passed to log_generic().
+ */
 #define var_error(s, ...) pthread_mutex_lock(&acp_state.log_buffer_lock); \
 						   snprintf(acp_state.log_buffer,LOG_BUFF_SIZE, "[" __FILE__ ":%i] Error: " s "",\
 		                            __LINE__,__VA_ARGS__);\
 		                   log_generic(acp_state.log_buffer,LOG_ERROR);\
 	                       pthread_mutex_unlock(&acp_state.log_buffer_lock);
 
-//routines
-int init_acp_state();
 /*
  * Error reporting can be done through two ways. first is to use macros
  * which in turn use log_generic(). other is to use report_error() which accepts
  * error codes in place of message strings. report_error() after converting the
  * error code to a string calls log_generic().
  */
+
+//routines
+
+int init_acp_state();
 void log_generic(const char* msg, log_level_t log_level);
 void report_error(error_codes_t error_code); //report errors which are fatal
 void close_ui();
 void destroy_win(WINDOW *local_win);
-/*
- * remember that routines which name resembles those in curses package,
- * prepend their name with "acp_".
- */
-//static void acp_mv_wprintw(struct window_state_t *win, int new_y, int new_x,
-//		char *string);
 void set_focus_to_console();
 void destroy_cdkscreens();
 void display_help();

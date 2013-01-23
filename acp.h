@@ -1,6 +1,7 @@
-/*
- * acp.h
- * main include file for acp
+/**
+ * @file acp.h
+ * @brief header file for acp.c
+ * @author Tej
  */
 #ifndef _ACP_H_
 #define _ACP_H_

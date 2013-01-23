@@ -1,8 +1,7 @@
-/*
- * acp_common.c
- *
- *  Created on: Nov 17, 2012
- *      Author: tej
+/**
+ * @file acp_common.c
+ * @brief This file includes common code which will be used by other sections
+ * 		  of acp. It includes logging macros,routines and init routines.
  */
 #include "acp_common.h"
 //=========== routines declaration============
@@ -13,12 +12,23 @@ static void init_cdks_pointers();
 static void destroy_acp_window(); //main routine for deleting windows
 static void redraw_cdkscreens(); //draw cdkscrens after drawing a popup window or
 //===========================================
+/**
+ * @brief Destroy cdk screen pointers that are present in acp_state.
+ */
 void destroy_cdkscreens() {
     destroyCDKScreen(acp_state.menubar_win.cdksptr);
     destroyCDKScreen(acp_state.GMM_win.cdksptr);
     destroyCDKScreen(acp_state.CMM_win.cdksptr);
     destroyCDKScreen(acp_state.console_win.cdksptr);
 }
+/**
+ * @brief Init the acp_state
+ *
+ * Initialize acp_state structure which is accessible throughout. Ensure
+ * that pointers and other variables are initialized to null or empty or
+ * relevant values.
+ * @return Return ACP_OK if operation was successful else an error code.
+ */
 int init_acp_state() {
     //reset the acp_state
     init_window_pointers();
@@ -54,19 +64,29 @@ int init_acp_state() {
     //TODO: also init global_labels
     return ACP_OK;
 }
+/**
+ * @brief Initialize window pointers of acp_state
+ */
 static void init_window_pointers() {
     acp_state.menubar_win.wptr = acp_state.GMM_win.wptr =
                                      acp_state.CMM_win.wptr = acp_state.console_win.wptr = NULL;
 }
+/**
+ * @brief Initialize cdk screen pointers of acp_state
+ */
 static void init_cdks_pointers() {
     acp_state.menubar_win.cdksptr = acp_state.GMM_win.cdksptr =
                                         acp_state.CMM_win.cdksptr = acp_state.console_win.cdksptr = NULL;
     acp_state.master_screen = NULL;
 }
 /**
- * @@debug_generic(const char *msg)
- * Description: prints msg at LINES-1,COLS/2. Avoid using it. as it will
- * 				overwrite  last window. Also requires a full screen refresh.
+ * @brief Generic logger routine.
+ *
+ * Prints a message at LINES-1,COLS/2. Avoid using it. as it will overwrite
+ * last logged message. Also requires a full screen refresh.
+ * @param msg The message which is to be logged
+ * @param log_level The priority of this message- whether it's a debug,warning
+ * 			or error message.
  */
 void log_generic(const char* msg, log_level_t log_level) {
     if (acp_state.gui_ready) {
@@ -88,17 +108,20 @@ void log_generic(const char* msg, log_level_t log_level) {
 }
 
 /**
- * @@calculate_msg_center_position(int msg_len)
- * Description : returns the x position where msg should be displayed such that
- * 				it appears in the center location
+ * @brief Finds central position where a message can be displayed.
+ *
+ * Returns the position where message should be displayed such that	it appears
+ * in the center of screen.
+ * @param msg_len Length of message to be displayed
+ * @return The beginning location from where message will be displayed
  */
 static int calculate_msg_center_position(int msg_len) {
     return ((MIN_COLS - msg_len) / 2);
 }
 
 /**
- * @@report_error(error_code)
- * Description: converts error codes into understandable error strings.
+ * @brief Converts error codes into understandable error strings.
+ * @param error_code The error code which is to be converted
  */
 void report_error(error_codes_t error_code) {
     char msg[LOG_BUFF_SIZE];
@@ -134,6 +157,11 @@ void report_error(error_codes_t error_code) {
     //just report the error
     log_generic(msg,LOG_ERROR);
 }
+/**
+ * @brief Destroys all windows and clears UI.
+ *
+ * Call it when acp is being closed down.
+ */
 void close_ui() {
     sdebug("Closing down UI");
     //delete windows
@@ -148,7 +176,9 @@ void close_ui() {
     endCDK();
     endwin();
 }
-
+/**
+ * @brief Destroys all window pointers.
+ */
 static void destroy_acp_window() {
     //destroy window as well as evrything it contains--label,cdkscreens,widgets
     //etc.
@@ -165,31 +195,24 @@ static void destroy_acp_window() {
     delwin(acp_state.console_win.wptr);
 
 }
-/*
- * acp_mv_wprintw() is not being used anywhere. so we will comment in case we
- * might use it someday
- */
-//static void acp_mv_wprintw(struct window_state_t *win, int new_y, int new_x,
-//		char *string) {
-//	//update cur_x and cur_y
-//	win->cur_x = new_x;
-//	win->cur_y = new_y;
-//
-//	//now at this new position display the string
-//	mvwprintw(win->wptr, win->cur_y, win->cur_x, "%s", string);
-//}
 /**
- * @@set_focus_to_console()
- * Description: set focus to CDK console
+ * @brief Brings focus to console window
+ *
+ * When processing user response through key presses one of the keys might
+ * trigger events in other windows causing console window to loose focus. Then it
+ * becomes necessary to transfer focus to console window. For e.g. as F2 will
+ * bring Help window, giving focus to console is necessary else, program will
+ * no longer be able to get attention.
  */
 void set_focus_to_console() {
     activateCDKSwindow(acp_state.console, 0);
 }
 
 /**
- * @@log_msg_to_console(msg)
- * Description: log this message to CDK console that we have created.When gui
- * 				is fully ready, then log_genric() will call this routine only.
+ * Log a message to CDK console that we have created. When UI is fully ready,
+ * then log_generic() will call this routine only.
+ * @param msg The message which is to be logged
+ * @param log_level One of LOG_DEBUG,LOG_WARN or LOG_ERR
  */
 static void log_msg_to_console(const char *msg, log_level_t log_level) {
     char log_msg[LOG_BUFF_SIZE];
@@ -221,7 +244,11 @@ static void log_msg_to_console(const char *msg, log_level_t log_level) {
     }
     addCDKSwindow(acp_state.console, log_msg, BOTTOM);
 }
-
+/**
+ * After a popup screen is drawn in CDK, it is necessary to redraw under-
+ * lying CDK windows otherwise they will not be displayed on the screen and
+ * program is left in an inconsistent state.
+ */
 static void redraw_cdkscreens() {
     drawCDKScreen(acp_state.menubar_win.cdksptr);
     drawCDKScreen(acp_state.GMM_win.cdksptr);
@@ -229,10 +256,8 @@ static void redraw_cdkscreens() {
     drawCDKScreen(acp_state.console_win.cdksptr);
 }
 /**
- * @@display_help()
- * Description: Displays help options in a popup window. Also do a redraw of
- * 				all cdkscreens since we will be displaying popup windows
- * 				in master_cdkscreen.
+ * Displays help options in a popup window. Also do a redraw of all cdkscreens
+ * since we will be displaying popup windows in master_cdkscreen.
  */
 void display_help() {
     const char *mesg[15];

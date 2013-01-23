@@ -1,11 +1,10 @@
-/*
- * acp_config.h
- *
- *  Created on: Nov 8, 2012
- *      Author: tej
- *  Description: define configuration options. variables that might alter the
- * 				behaviour of program such as window sizes, swappiness factor etc.
- *
+/**
+ * @file acp_config.h
+ * @brief Define configuration options. variables that might alter the
+ * 		 behaviour of program such as window sizes, swappiness factor etc. Also
+ * 		 contains the structure for saving the information loaded from config
+ * 		 file. Globally accessible .
+ * @author Tej
  */
 #ifndef _ACP_CONFIG_H_
 #define _ACP_CONFIG_H_
@@ -24,7 +23,15 @@
 /*
  * the program's max. screen coordinates for our program
  */
+/**
+ * @def MIN_LINES
+ * @brief Minimum lines needed for acp to init UI mode.
+ */
 #define MIN_LINES 40
+/**
+ * @def MIN_COLS
+ * @brief Minimum columns needed for acp to init UI mode.
+ */
 #define MIN_COLS 100
 
 /*
@@ -34,19 +41,51 @@
  *
  * Size is represented in no. of lines or rows.
  */
-
+/**
+ * @def MENUBAR_SIZE
+ * @brief Size of menubar window in no. of lines.
+ */
 #define MENUBAR_SIZE 3
+/**
+ * @def CONSOLE_SIZE
+ * @brief Size of console window in no. of lines.
+ */
 #define CONSOLE_SIZE 6
+/**
+ * @def STATUS_WINDOW_SIZE
+ * @brief Size of status_window in no. of lines.
+ */
 #define STATUS_WINDOW_SIZE 12
 
-//modify initialization behaviour of acp
+/**
+ * @def RAW_MODE
+ * @brief Turn on/off curses raw mode
+ */
 #define RAW_MODE off
+/**
+ * @def NOECHO
+ * @brief Turn on/off curses no-echo feature
+ */
 #define NOECHO on
+/**
+ * @def KEYPAD_MODE
+ * @brief Turn on/off curses keypad feature
+ */
 #define KEYPAD_MODE on
+/**
+ * @def CBREAK_MODE
+ * @brief Turn on/off cbreak feature of curses
+ */
 #define CBREAK_MODE on
-
+/**
+ * @def ACP_CONF_FILE
+ * @brief Path of Configuration file
+ */
 #define ACP_CONF_FILE "acp.conf"
-
+/**
+ * @struct acp_config_t
+ * @brief Structure for storing information loaded from configuration file.
+ */
 struct acp_config_t {
 	int max_buff_size;
 	int swappiness;

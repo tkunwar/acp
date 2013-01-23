@@ -1,19 +1,15 @@
-/*
- * acp_gui.c
- *
- *  Created on: Nov 8, 2012
- *      Author: tej
+/**
+ * @file acp_gui.c
+ * @brief This source file contains code for rendering curses based UI.
+ * @author Tej
  */
 #include "acp_gui.h"
 //========== routines declarations ==============
 static WINDOW *create_newwin(int height, int width, int starty, int startx);
 
 static int draw_windows(); //draw parent windows
-//static struct acp_ui_label *create_new_label(WINDOW *ptr, int beg_x, int beg_y,
-//		char *caption);
 static void draw_menubar();
 static void calculate_padding(int *hor_padding, int *ver_padding);
-//static void print_window_state(struct window_state_t window);
 static void init_cdk();
 static int check_window_configuration();
 static void draw_GMM_window();
@@ -21,6 +17,10 @@ static void draw_CMM_window();
 static void create_cdkscreens();
 static void draw_console();
 //===============================================
+/**
+ * Initialise curses mode for acp.
+ * @return Return ACP_OK if successful else an error code.
+ */
 int init_curses() {
     //master curses window
     acp_state.cursesWin = initscr();
@@ -49,8 +49,9 @@ int init_curses() {
     return ACP_OK;
 }
 /**
- * @@draw_windows()
- * Description: draw three master windows. return error code accordingly.
+ * Draw master windows including menubar,gmm_window,cmm_window and console
+ * by calling helper routines.
+ * @return ACP_OK if successful else an error code.
  */
 int acp_ui_main() {
     //first draw parent windows
@@ -69,6 +70,10 @@ int acp_ui_main() {
     //every thing is fine so far
     return ACP_OK;
 }
+/**
+ * @brief Create CDK screens. CDK screen is the actual window segment to which we write
+ * in CDK.
+ */
 static void create_cdkscreens() {
     //by now we have window pointers, lets create cdkscreens out of them.
     acp_state.console_win.cdksptr = initCDKScreen(acp_state.console_win.wptr);
@@ -79,6 +84,10 @@ static void create_cdkscreens() {
     //also create the master cdkscreen which will be used for popup messages.
     acp_state.master_screen = initCDKScreen(acp_state.cursesWin);
 }
+/**
+ * Draw master windows. Actual implementation.
+ * @return ACP_OK if all ok else an error code
+ */
 static int draw_windows() {
     /*
      * 1.	calculate size of these three windows. Size of menubar and console

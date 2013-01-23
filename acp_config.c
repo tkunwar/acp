@@ -1,19 +1,23 @@
-/*
- * acp_config.c
- *
- *  Created on: 23-Jan-2013
- *      Author: tej
+/**
+ * @file acp_config.c
+ * @brief This file contains code which deals with parsing configuration file
+ * and saves this information in acp_config structure which is globally
+ * accessible.
+ * @author Tej
  */
 #include "acp_config.h"
 
-/*
- * Initialize acp_config with default state.
+/**
+ * Initialise acp_config structure with default values
  */
 static void init_acp_config() {
 	acp_config.cell_compaction_enabled = true;
 	acp_config.max_buff_size = 100;
 	acp_config.swappiness = 70;
 }
+/**
+ * Display the configuration that has been parsed from the configuration file.
+ */
 static void print_loaded_configs(){
 	fprintf(stderr,"\nLoaded configs:");
 	fprintf(stderr,"\n\tmax_buffer_size: %d",acp_config.max_buff_size);
@@ -25,6 +29,11 @@ static void print_loaded_configs(){
 	}
 	fprintf(stderr,"\n");
 }
+/**
+ * Main routine for reading configuration file and save the information in
+ * acp_config declared in acp_config.h .
+ * @return Return ACP_OK if everything went OK else an error code.
+ */
 int load_config() {
 	config_t cfg;
 	const char* s_val; // will be used to store string values
