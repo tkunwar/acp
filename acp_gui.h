@@ -18,6 +18,10 @@
 #ifndef _ACP_GUI_H_
 #define _ACP_GUI_H_
 
+#ifndef ACP_DTYPES_H_
+	#include "acp_dtypes.h"
+#endif
+
 #include"acp_common.h"
 
 struct acp_ui_label {
