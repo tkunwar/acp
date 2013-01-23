@@ -16,6 +16,8 @@ acp: acp.o acp_gui.o acp_common.o acp_config.o
 
 %.o: %.c %.h
 	$(CC) -c $*.c $(CFLAGS)
-
+docs:
+	doxygen acp.doxyfile
 clean:
 	rm -f *.o *.out acp
+	rm -r -f doxygen-output
