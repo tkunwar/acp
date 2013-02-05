@@ -6,7 +6,10 @@
  * @author Tej
  */
 #include "acp_config.h"
-
+//-----------------------------------
+//defnie routine before using them
+static void print_loaded_configs();
+//-----------------------------------
 /**
  * @brief Initialise acp_config structure with default values
  */
