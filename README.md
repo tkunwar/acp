@@ -49,10 +49,10 @@ Generating documentation
 -------------------------
 1. This project uses doxygen to generate documentation. Therefore install 
 	following packages to be able to generate documentation. 
-	
-		```bash
-			$sudo apt-get install doxygen,doxygen-latex,doxygen-doc
-		```
+
+	```bash
+	$sudo apt-get install doxygen,doxygen-latex,doxygen-doc
+	```
 	Note: doxygen-latex package is needed only if documentation is 
 			required in pdf format. If pdf output is not required 
 			then it can be explicitly disabled by editing file 
@@ -63,13 +63,13 @@ Generating documentation
 2. For to be able to generate graphs (call graphs, dependency graph etc)
 	as part of the documentation get graphviz.
 
-		```bash
-			$sudo apt-get install graphviz,graphviz-dev
-		```
+	```bash
+	$sudo apt-get install graphviz,graphviz-dev
+	```
 3. Now generate documentation using following make command. The documentation
 	is generated in a directory named "doxygen-output" under project root
 	directory.
 
-		```bash
-			$make docs
-		```
+	```bash
+	$make docs
+	```
