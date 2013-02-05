@@ -7,7 +7,15 @@
 //========== routines declaration============
 void process_user_response();
 void acp_shutdown(); //close down program -- successful termination
-void exit_acp(); //call when fatal error has occurred such as window size too
+void exit_acp(bool got_signal); //call when fatal error has occurred such as window size too
+static void signal_handler(int);
+static void dumpstack(void);
+static void cleanup(void);
+void init_signals(void);
+void panic(const char *, ...);
+
+struct sigaction sigact;
+char *progname;
 
 //===========================================
 /**
@@ -17,7 +25,12 @@ void exit_acp(); //call when fatal error has occurred such as window size too
  * @return Sucess or failure to OS
  */
 int main(int argc, char *argv[]) {
+	progname = *(argv);
+	atexit(cleanup);
+	init_signals();
+
 	CDKparseParams(argc, argv, &acp_state.params, CDK_CLI_PARAMS);
+
 	//initialize acp_state
 	if (init_acp_state() != ACP_OK) {
 		fprintf(stderr, "acp_state_init: failed. Aborting");
@@ -27,16 +40,20 @@ int main(int argc, char *argv[]) {
 	if (load_config() == ACP_ERR_CONFIG_ABORT) {
 		exit(EXIT_FAILURE);
 	}
-    //initialize curses and cdk mode
-    if (init_curses()!=ACP_OK) {
-        exit_acp();
-    }
-    //try to draw windows
-    if (acp_ui_main()!= ACP_OK) {
-        exit_acp();
-    }
-    //now wait for user input and process key-presses
-    process_user_response();
+	//initialize curses and cdk mode
+	if (init_curses() != ACP_OK) {
+		exit_acp();
+	}
+
+	//try to draw windows
+	if (acp_ui_main() != ACP_OK) {
+		exit_acp();
+	}
+//	abort();
+	//now wait for user input and process key-presses
+	process_user_response();
+
+	sigemptyset(&sigact.sa_mask);
 	exit(EXIT_SUCCESS);
 }
 
@@ -88,7 +105,7 @@ void acp_shutdown() {
  * After that program will exit.If gui_ready is set then before exiting call
  * close_gui()
  */
-void exit_acp() {
+void exit_acp(bool got_signal) {
 	getch();
 	if (acp_state.gui_ready == TRUE) {
 		close_ui();
@@ -98,4 +115,67 @@ void exit_acp() {
 		endCDK();
 	}
 	exit(EXIT_FAILURE);
+}
+void init_signals(void){
+    sigact.sa_handler = signal_handler;
+    sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags = 0;
+    sigaction(SIGINT, &sigact, (struct sigaction *)NULL);
+
+    sigaddset(&sigact.sa_mask, SIGSEGV);
+    sigaction(SIGSEGV, &sigact, (struct sigaction *)NULL);
+
+    sigaddset(&sigact.sa_mask, SIGBUS);
+    sigaction(SIGBUS, &sigact, (struct sigaction *)NULL);
+
+    sigaddset(&sigact.sa_mask, SIGQUIT);
+    sigaction(SIGQUIT, &sigact, (struct sigaction *)NULL);
+
+    sigaddset(&sigact.sa_mask, SIGHUP);
+    sigaction(SIGHUP, &sigact, (struct sigaction *)NULL);
+
+    sigaddset(&sigact.sa_mask, SIGKILL);
+    sigaction(SIGKILL, &sigact, (struct sigaction *)NULL);
+}
+
+static void signal_handler(int sig){
+    if (sig == SIGHUP) panic("FATAL: Program hanged up\n");
+    if (sig == SIGSEGV || sig == SIGBUS){
+        dumpstack();
+        panic("FATAL: %s Fault. Logged StackTrace\n", (sig == SIGSEGV) ? "Segmentation" : ((sig == SIGBUS) ? "Bus" : "Unknown"));
+    }
+    if (sig == SIGQUIT) panic("QUIT signal ended program\n");
+    if (sig == SIGKILL) panic("KILL signal ended program\n");
+    if (sig == SIGINT) panic("Interrupted");
+}
+
+void panic(const char *fmt, ...){
+    char buf[50];
+    va_list argptr;
+    va_start(argptr, fmt);
+    vsprintf(buf, fmt, argptr);
+    va_end(argptr);
+    fprintf(stderr, buf);
+    exit(-1);
+}
+
+static void dumpstack(void){
+    /* Got this routine from http://www.whitefang.com/unix/faq_toc.html
+    ** Section 6.5. Modified to redirect to file to prevent clutter
+    */
+    /* This needs to be changed... */
+    char dbx[160];
+
+    sprintf(dbx, "echo 'where\ndetach' | dbx -a %d > %s.dump", getpid(), progname);
+    /* Change the dbx to gdb */
+
+    system(dbx);
+    return;
+}
+
+void cleanup(void){
+    sigemptyset(&sigact.sa_mask);
+    /* Do any cleaning up chores here */
+
+    exit_acp(true);
 }
