@@ -22,6 +22,11 @@ acp: acp.o acp_gui.o acp_common.o acp_config.o
 	$(CC) -c $*.c $(CFLAGS)
 docs:
 	doxygen acp.doxyfile
+run:
+	ulimit -c unlimited
+	./acp
+debug:
+	gdb acp core
 clean:
-	rm -f *.o *.out acp
+	rm -f *.o *.out acp core
 	rm -r -f doxygen-output
