@@ -42,7 +42,7 @@ External Package depedencies:
 	compilation directory (of libconfig). It should be in 
 	"libconfig-1.4.9/lib/.libs" note that ".libs" is hidden directory.
 	Now copy "libconfig.a" where Makefile of acp is located and edit 
-	Makefile by replacing the word "-lconfig" with "libcofngi.a". Now 
+	Makefile by replacing the word "-lconfig" with "libconfig.a". Now 
 	compile again with make. Everything should be fine. :)
 	
 Generating documentation
