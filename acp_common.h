@@ -14,7 +14,8 @@
 #include<stdlib.h>
 #include <pthread.h>
 #include<curses.h>
-
+#include<signal.h>
+#include <stdarg.h>
 #include "acp_config.h"
 #include "acp_error.h"
 #include "cdk_wrap.h"
