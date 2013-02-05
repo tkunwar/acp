@@ -312,4 +312,64 @@ as General Memory Model (GMM)and other as Compressed memory Model(CMM).
 	cleanup function as a callback.
 
 3. Even better than epoll() would be libev() which is a high level routine
-	for event based I/O.
+	for event based I/O.	
+
+---------------------------------------------------------------------------
+1. create two files acp_gmm_utils.c/h and acp_cmm_utils.c/h .
+	acp_gmm_utils.c holds code specific to gmm while acp_cmm_utils.c/h
+	holds code specific to compressed cache segment.
+
+2. in acp.c :
+	create_master_threads(){
+		acp_state.shutdown_in_progress = false
+		1. create acp_gmm_main_thread
+		2. create acp_cmm_main_thread
+
+		Note: both threads need to be collected by parent when acp is closing down.
+			therefore, threads must be non-detacheable.
+	}
+
+3. in acp_gmm_utils.c:
+	acp_gmm_main(){
+		1. init the memory structures including bufffers lists, global page list
+			and swap space.
+		2. create helper threads as necessary but do no start them. (have an 
+			acp_gmm_startup_lock to prevent helper threads to start untill explicitly 
+			invoked by acp_gmm_main() )
+		3. when necessary routines/structures have been initialized, start threads by
+			releasing acp_gmm_startup_lock .
+		4. while acp_state.shutdown_in_progress == false:
+			sleep(2)
+
+		5. Now that shutdown is in progress. 
+			1. start cancelling helper threads (some better way ?)
+				--------------------
+				In general thread cancellation is not a really good idea. It 
+				is better, whenever possible, to have a shared flag, that is
+				used by the threads to break out of the loop. That way, you
+				will let the threads perform any cleanup they might need to
+				do before actually exiting.
+				--------------------
+
+				Therefore in acp_gmm_utils.h/acp_cmm_utils.h, install a signal
+				handler in acp.c which when recieves a valid (catcheable) signal
+				SIG_KILL/SIG_EINTR sets the global flag shutdown_in_flag to true.
+
+				now all threads (who do not have any children) will stop their
+				activity and start resource cleanup (if applicable). however, for
+				parent threads, they wont quit untill they have collected their
+				children. Therefore, all child threads must be collected.
+
+				Also note that as we will have a lot of helper threads competing 
+				with each other for shared resources, synchronizing the order of
+				their termination might be needed.
+
+				Warning : Buffers and shared resources must not be cleaned by child
+							threads or (non-owner threads). Only those who created 
+							the rsources will be responsible for cleaning it up.
+							
+			2. now cleanup all resources
+			3. return 
+
+
+	}
