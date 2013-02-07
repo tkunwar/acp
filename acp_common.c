@@ -61,6 +61,9 @@ int init_acp_state() {
         fprintf(stderr, "\nprocess1_mutex_init failed");
         return ACP_ERR_ACP_STATE_INIT;
     }
+    acp_state.shutdown_in_progress = false;
+    acp_state.shutdown_completed = false;
+    acp_state.recieved_signal_code = 0;
     //TODO: also init global_labels
     return ACP_OK;
 }
