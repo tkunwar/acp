@@ -7,13 +7,10 @@
 //========== routines declaration============
 void process_user_response();
 void acp_shutdown(); //close down program -- successful termination
-void exit_acp(bool got_signal); //call when fatal error has occurred such as window size too
 static void signal_handler(int);
-static void dumpstack(void);
-static void cleanup(void);
+static void cleanup_after_failure(void);
 void init_signals(void);
-void panic(const char *, ...);
-
+static void stack_trace();
 struct sigaction sigact;
 char *progname;
 
@@ -26,7 +23,7 @@ char *progname;
  */
 int main(int argc, char *argv[]) {
 	progname = *(argv);
-	atexit(cleanup);
+	atexit(acp_shutdown);
 	init_signals();
 
 	CDKparseParams(argc, argv, &acp_state.params, CDK_CLI_PARAMS);
@@ -42,18 +39,17 @@ int main(int argc, char *argv[]) {
 	}
 	//initialize curses and cdk mode
 	if (init_curses() != ACP_OK) {
-		exit_acp();
+		exit(EXIT_FAILURE);
 	}
 
 	//try to draw windows
 	if (acp_ui_main() != ACP_OK) {
-		exit_acp();
+		exit(EXIT_FAILURE);
 	}
 //	abort();
 	//now wait for user input and process key-presses
 	process_user_response();
 
-	sigemptyset(&sigact.sa_mask);
 	exit(EXIT_SUCCESS);
 }
 
@@ -67,7 +63,7 @@ void process_user_response() {
 	while ((ch = getch())) {
 		switch (ch) {
 		case KEY_F(4):
-			acp_shutdown();
+			exit(EXIT_SUCCESS);
 			break;
 		case KEY_F(2):
 			display_help();
@@ -88,25 +84,21 @@ void process_user_response() {
 /**
  * @brief Prepares program for shutdown.
  *
- * Clean up any memory blocks,files etc. We are terminating safely. Remember
- * not to log or use UI in any way since we do not have ncurses at this moment.
- * Therefore, shutdown UI must be the last thing to do.
+ * Clean up any memory blocks,files etc. This is a callback routine which will
+ * be executed whenever program terminates. In simple words, it is the last
+ * routine to be executed.
  */
 void acp_shutdown() {
-	//other stuff related to cleanup
+	//Are we are exiting because we got a signal ?
+	if (acp_state.recieved_signal_code != 0) {
+		cleanup_after_failure();
+		exit(EXIT_FAILURE);
+	}
+
+	//other stuff related to cleanup but it's a normal cleanup
 
 	//shut down GUI
-	close_ui();
-	exit(EXIT_SUCCESS);
-}
-/**
- * @brief Reports error but fatal ones only.
- *
- * After that program will exit.If gui_ready is set then before exiting call
- * close_gui()
- */
-void exit_acp(bool got_signal) {
-	getch();
+//	getch();
 	if (acp_state.gui_ready == TRUE) {
 		close_ui();
 	} else {
@@ -114,68 +106,120 @@ void exit_acp(bool got_signal) {
 		destroy_cdkscreens();
 		endCDK();
 	}
+	sigemptyset(&sigact.sa_mask);
+	exit(EXIT_SUCCESS);
+}
+/**
+ * @brief Intialize our signal handler
+ *
+ * Register what all signals can we mask. These are those signals
+ * that we will be able to catch in our program.
+ */
+void init_signals(void) {
+	sigact.sa_handler = signal_handler;
+	sigemptyset(&sigact.sa_mask);
+	sigact.sa_flags = 0;
+	sigaction(SIGINT, &sigact, (struct sigaction *) NULL );
+
+	sigaddset(&sigact.sa_mask, SIGSEGV);
+	sigaction(SIGSEGV, &sigact, (struct sigaction *) NULL );
+
+	sigaddset(&sigact.sa_mask, SIGBUS);
+	sigaction(SIGBUS, &sigact, (struct sigaction *) NULL );
+
+	sigaddset(&sigact.sa_mask, SIGQUIT);
+	sigaction(SIGQUIT, &sigact, (struct sigaction *) NULL );
+
+	sigaddset(&sigact.sa_mask, SIGHUP);
+	sigaction(SIGHUP, &sigact, (struct sigaction *) NULL );
+
+	sigaddset(&sigact.sa_mask, SIGKILL);
+	sigaction(SIGKILL, &sigact, (struct sigaction *) NULL );
+}
+/**
+ * @brief Signal handler routine.
+ *
+ * When a signal is raised then this routine will catch them. In this routine
+ * we will mostly set flags and make an exit call so that acp_shutdown can
+ * begin the shutdown and cleanup process.
+ *
+ * @param sig The signal code
+ */
+static void signal_handler(int sig) {
+	//set the signal code that we got
+	acp_state.recieved_signal_code = sig;
+	var_debug("sig: %d",sig);
+	if (sig == SIGHUP)
+		sdebug("Got signal SIGHUP");
+	if (sig == SIGSEGV) {
+		sdebug("Got signal SIGSEGV");
+	}
+	if (sig == SIGBUS) {
+		sdebug("Got signal SIGBUS");
+	}
+	var_debug("sig: %d",sig);
+	if (sig == SIGQUIT)
+		sdebug("Got signal SIGQUIT");
+	var_debug("sig: %d",sig);
+	if (sig == SIGKILL)
+		sdebug("Got signal SIGKILL");
+	var_debug("sig: %d",sig);
+	if (sig == SIGINT)
+		sdebug("Got singal SIGINT");
+	// Attempt to perform cleanup_after_failure when we have SIGINT,SIGKILL and SIGQUIT
+	// else give up
+	if ((sig == SIGINT) || (sig == SIGQUIT) || (sig == SIGKILL)) {
+		sdebug("Prepairing to exit gracefully..");
+		acp_state.shutdown_in_progress = true;
+		//wait while cleanup_after_failure is finished
+		//a mutex lock would have been more efficient
+//		while(acp_state.shutdown_completed==false){
+//			sleep(1);
+//		}
+	}
 	exit(EXIT_FAILURE);
 }
-void init_signals(void){
-    sigact.sa_handler = signal_handler;
-    sigemptyset(&sigact.sa_mask);
-    sigact.sa_flags = 0;
-    sigaction(SIGINT, &sigact, (struct sigaction *)NULL);
+/**
+ * @brief This routine performs cleanup after a failure.
+ *
+ * Cleanup resources hold by threads. Note that we are exiting because
+ * we received a signal.
+ */
+void cleanup_after_failure(void) {
+	// No access curses UI, back to plain stderr
+	sigemptyset(&sigact.sa_mask);
 
-    sigaddset(&sigact.sa_mask, SIGSEGV);
-    sigaction(SIGSEGV, &sigact, (struct sigaction *)NULL);
+	if (acp_state.gui_ready == TRUE) {
+		close_ui();
+	} else {
+		/* Exit CDK. */
+		destroy_cdkscreens();
+		endCDK();
+	}
 
-    sigaddset(&sigact.sa_mask, SIGBUS);
-    sigaction(SIGBUS, &sigact, (struct sigaction *)NULL);
-
-    sigaddset(&sigact.sa_mask, SIGQUIT);
-    sigaction(SIGQUIT, &sigact, (struct sigaction *)NULL);
-
-    sigaddset(&sigact.sa_mask, SIGHUP);
-    sigaction(SIGHUP, &sigact, (struct sigaction *)NULL);
-
-    sigaddset(&sigact.sa_mask, SIGKILL);
-    sigaction(SIGKILL, &sigact, (struct sigaction *)NULL);
+	//print a stack trace
+	if (acp_state.recieved_signal_code == SIGSEGV
+			|| acp_state.recieved_signal_code == SIGBUS) {
+		stack_trace();
+	}
 }
+/**
+ * @brief Prints stack trace. We will print stack trace when either
+ * SIGSEGV or SIGBUS was raised.
+ */
+static void stack_trace() {
+	void *array[20];
+	size_t size;
+	char **strings;
+	size_t i;
 
-static void signal_handler(int sig){
-    if (sig == SIGHUP) panic("FATAL: Program hanged up\n");
-    if (sig == SIGSEGV || sig == SIGBUS){
-        dumpstack();
-        panic("FATAL: %s Fault. Logged StackTrace\n", (sig == SIGSEGV) ? "Segmentation" : ((sig == SIGBUS) ? "Bus" : "Unknown"));
-    }
-    if (sig == SIGQUIT) panic("QUIT signal ended program\n");
-    if (sig == SIGKILL) panic("KILL signal ended program\n");
-    if (sig == SIGINT) panic("Interrupted");
-}
+	size = backtrace(array, 10);
+	strings = backtrace_symbols(array, size);
 
-void panic(const char *fmt, ...){
-    char buf[50];
-    va_list argptr;
-    va_start(argptr, fmt);
-    vsprintf(buf, fmt, argptr);
-    va_end(argptr);
-    fprintf(stderr, buf);
-    exit(-1);
-}
+	printf("Obtained %zd stack frames.\n", size);
 
-static void dumpstack(void){
-    /* Got this routine from http://www.whitefang.com/unix/faq_toc.html
-    ** Section 6.5. Modified to redirect to file to prevent clutter
-    */
-    /* This needs to be changed... */
-    char dbx[160];
+	for (i = 0; i < size; i++)
+		printf("%s\n", strings[i]);
 
-    sprintf(dbx, "echo 'where\ndetach' | dbx -a %d > %s.dump", getpid(), progname);
-    /* Change the dbx to gdb */
-
-    system(dbx);
-    return;
-}
-
-void cleanup(void){
-    sigemptyset(&sigact.sa_mask);
-    /* Do any cleaning up chores here */
-
-    exit_acp(true);
+	free(strings);
 }
