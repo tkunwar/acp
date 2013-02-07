@@ -11,6 +11,7 @@
 #endif
 
 #include<unistd.h>
+#include<execinfo.h>
 #include<stdlib.h>
 #include <pthread.h>
 #include<curses.h>
@@ -82,6 +83,9 @@ struct ACP_STATE {
     WINDOW *cursesWin; //main curses window--stdscr
     // mutex for getting lock if log_buffer
     pthread_mutex_t log_buffer_lock;
+    bool shutdown_in_progress;
+    bool shutdown_completed ;
+    int recieved_signal_code;
 } acp_state;
 
 //some debug,warning and error macros
