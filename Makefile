@@ -9,7 +9,7 @@ CC=gcc
 # CFLAGS=-Wall -g -lcdk -lncurses -lconfig
 # when using libconfig in static linking mode 
 # use this
-CFLAGS=-Wall -g -lcdk -lncurses
+CFLAGS=-Wall -g -lcdk -lncurses -lpthread
 LIBS=libconfig.a
 
 #Uncomment the line below to compile on Mac
