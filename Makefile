@@ -15,10 +15,10 @@ LIBS=libconfig.a
 #Uncomment the line below to compile on Mac
 #LIBS=-liconv
 all:acp
-acp: acp.o acp_gui.o acp_common.o acp_config.o
+acp: acp.o acp_gui.o acp_common.o acp_config.o acp_gmm_utils.o acp_cmm_utils.o
 	$(CC) -o $@ $^ $(LIBS) $(CFLAGS)
 
-%.o: %.c %.h
+%.o: %.c
 	$(CC) -c $*.c $(CFLAGS)
 docs:
 	doxygen acp.doxyfile

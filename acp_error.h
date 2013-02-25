@@ -25,6 +25,7 @@ typedef enum {
     ACP_ERR_CDK_CONSOLE_DRAW,/**< Error drawing console window */
     ACP_ERR_WINDOW_CONFIG_MISMATCH,/**< UI Error: config mismatch in specified windows's sizes */
     ACP_ERR_DRAW_WINDOWS,/**< Error in drawing windows*/
+    ACP_ERR_THREAD_INIT, /**< Error in thread creation*/
     ACP_ERR_GENERIC /** Generic error: not sure what it is, but it's fishy anyway*/
 } error_codes_t;
 /**

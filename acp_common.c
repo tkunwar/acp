@@ -150,6 +150,10 @@ void report_error(error_codes_t error_code) {
         snprintf(msg, LOG_BUFF_SIZE,
                  "Window configuration mismatch, check acp_config.h");
         break;
+    case ACP_ERR_THREAD_INIT:
+    	snprintf(msg, LOG_BUFF_SIZE,
+    	                 "Failed to create threads");
+    	break;
     case ACP_ERR_GENERIC:
         snprintf(msg, LOG_BUFF_SIZE, "An unknown error has occurred!");
         break;

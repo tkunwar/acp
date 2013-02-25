@@ -44,6 +44,16 @@ External Package depedencies:
 	Now copy "libconfig.a" where Makefile of acp is located and edit 
 	Makefile by replacing the word "-lconfig" with "libconfig.a". Now 
 	compile again with make. Everything should be fine. :)
+
+4. Increase terminal color display for better character display
+	First get package ncurses-term followed by putting a line in your
+	bashrc to make this full color suport available to all applications.
+	In short run these commands.
+	```bash
+	$sudo apt-get install ncuress-term
+	$echo "export TERM=\"xterm-256color\"" >> ~/.bashrc
+	```
+	That should solve the case.
 	
 Generating documentation
 -------------------------

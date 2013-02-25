@@ -86,6 +86,7 @@ struct ACP_STATE {
     bool shutdown_in_progress;
     bool shutdown_completed ;
     int recieved_signal_code;
+    pthread_t gmm_main_thread,cmm_main_thread;
 } acp_state;
 
 //some debug,warning and error macros

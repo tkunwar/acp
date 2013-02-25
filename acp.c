@@ -4,6 +4,8 @@
  * @author Tej
  */
 #include"acp.h"
+#include "acp_gmm_utils.h"
+#include "acp_cmm_utils.h"
 //========== routines declaration============
 void process_user_response();
 void acp_shutdown(); //close down program -- successful termination
@@ -47,6 +49,10 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 //	abort();
+	//now start main worker threads
+	if (start_main_worker_threads()!=ACP_OK){
+		exit(EXIT_FAILURE);
+	}
 	//now wait for user input and process key-presses
 	process_user_response();
 
@@ -106,6 +112,15 @@ void acp_shutdown() {
 		destroy_cdkscreens();
 		endCDK();
 	}
+	//collect threads
+	if (pthread_join(acp_state.gmm_main_thread,NULL)!=0){
+		fprintf(stderr,"\nError in collecting thread: gmm_main");
+		exit(EXIT_FAILURE);
+	}
+//	if (pthread_join(acp_state.cmm_main_thread,NULL)!=0){
+//			fprintf(stderr,"\nError in collecting thread: cmm_main");
+//			exit(EXIT_FAILURE);
+//	}
 	sigemptyset(&sigact.sa_mask);
 	exit(EXIT_SUCCESS);
 }
@@ -222,4 +237,13 @@ static void stack_trace() {
 		printf("%s\n", strings[i]);
 
 	free(strings);
+}
+
+int start_main_worker_threads(){
+	//create main acp_gmm thread
+	if(pthread_create(&acp_state.gmm_main_thread,NULL,acp_gmm_main,NULL)!=0) {
+	        serror("\nThread1 creation failed ");
+	        return ACP_ERR_THREAD_INIT;
+	}
+	return ACP_OK;
 }
