@@ -90,6 +90,8 @@ struct acp_config_t {
 	int max_buff_size;
 	int swappiness;
 	bool cell_compaction_enabled;
+	unsigned int stats_refresh_rate; // in seconds
+	char log_filename[200];
 } acp_config;
 
 // --------routines-----------

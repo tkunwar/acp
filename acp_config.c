@@ -17,21 +17,22 @@ static void init_acp_config() {
 	acp_config.cell_compaction_enabled = true;
 	acp_config.max_buff_size = 100;
 	acp_config.swappiness = 70;
+	acp_config.stats_refresh_rate = 1;
 }
 /**
  * @brief Display the configuration that has been parsed from the configuration
  * file.
  */
-static void print_loaded_configs(){
-	fprintf(stderr,"\nLoaded configs:");
-	fprintf(stderr,"\n\tmax_buffer_size: %d",acp_config.max_buff_size);
-	fprintf(stderr,"\n\tswappiness: %d",acp_config.swappiness);
-	if (acp_config.cell_compaction_enabled == true){
-		fprintf(stderr,"\n\tcell_compaction_enabled: true");
-	}else{
-		fprintf(stderr,"\n\tcell_compaction_enabled: false");
+static void print_loaded_configs() {
+	fprintf(stderr, "\nLoaded configs:");
+	fprintf(stderr, "\n\tmax_buffer_size: %d", acp_config.max_buff_size);
+	fprintf(stderr, "\n\tswappiness: %d", acp_config.swappiness);
+	if (acp_config.cell_compaction_enabled == true) {
+		fprintf(stderr, "\n\tcell_compaction_enabled: true");
+	} else {
+		fprintf(stderr, "\n\tcell_compaction_enabled: false");
 	}
-	fprintf(stderr,"\n");
+	fprintf(stderr, "\n");
 }
 /**
  * @brief Read configuration file
@@ -42,7 +43,7 @@ static void print_loaded_configs(){
  */
 int load_config() {
 	config_t cfg;
-	const char* s_val; // will be used to store string values
+	const char* s_val=NULL; // will be used to store string values
 	int val;
 	bool config_fallback_enabled = false;
 	// initialize acp_config state
@@ -62,8 +63,8 @@ int load_config() {
 		if (strncmp(s_val, "true", 4) == 0) {
 			config_fallback_enabled = true;
 		}
-	}else{
-		fprintf(stderr,"\nWarning: Field conf_fallback_enabled not found in "
+	} else {
+		fprintf(stderr, "\nWarning: Field conf_fallback_enabled not found in "
 				"config file");
 	}
 	//read max_buffer_size
@@ -75,14 +76,14 @@ int load_config() {
 				// this is unacceptable, abort
 				fprintf(stderr,
 						"\nConfiguration prohibits using default values."
-						" Exiting!");
+								" Exiting!");
 				return ACP_ERR_CONFIG_ABORT;
 			}
 		} else {
 			acp_config.max_buff_size = val;
 		}
-	}else{
-		fprintf(stderr,"\nWarning: Field max_buffer_size not found in config"
+	} else {
+		fprintf(stderr, "\nWarning: Field max_buffer_size not found in config"
 				" file!");
 	}
 	//read swappiness field
@@ -90,35 +91,70 @@ int load_config() {
 		if (val >= 80 && val <= 95) {
 			fprintf(stderr,
 					"\nWarning: swappiness value is too high.\nPerformance may "
-					"be affected!");
+							"be affected!");
 			acp_config.swappiness = val;
 		} else if (val > 95) {
 			fprintf(stderr, "\nError: swappiness value is too high.");
 			if (config_fallback_enabled == false) {
 				fprintf(stderr,
 						"\nConfiguration prohibits using default values."
-						" Exiting!");
+								" Exiting!");
 				return ACP_ERR_CONFIG_ABORT;
 			}
-		}
-		else{
+		} else {
 			acp_config.swappiness = val;
 		}
-	}else{
-		fprintf(stderr,"\nWarning: Field swappiness not found in config file!");
+	} else {
+		fprintf(stderr,
+				"\nWarning: Field swappiness not found in config file!");
 	}
 	//read cell_compaction_enabled
-		if (config_lookup_string(&cfg, "cell_compaction_enabled", &s_val)) {
-			if (strncmp(s_val, "true", 4) == 0) {
-				acp_config.cell_compaction_enabled = true;
-			}
-			else{
-				acp_config.cell_compaction_enabled = false;
-			}
+	if (config_lookup_string(&cfg, "cell_compaction_enabled", &s_val)) {
+		if (strncmp(s_val, "true", 4) == 0) {
+			acp_config.cell_compaction_enabled = true;
+		} else {
+			acp_config.cell_compaction_enabled = false;
 		}
-		else{
-			fprintf(stderr,"\nWarning: Field cell_compaction_enabled not found"
-					" in config file!");
+	} else {
+		fprintf(stderr, "\nWarning: Field cell_compaction_enabled not found"
+				" in config file!");
+	}
+	//read stats_refresh field
+	if (config_lookup_int(&cfg, "stats_refresh_rate", &val)) {
+		if (val < 0) {
+			fprintf(stderr, "\nWarning: Invalid value for stats_refresh_rate!");
+			if (config_fallback_enabled == false) {
+				fprintf(stderr,
+						"\nConfiguration prohibits using default values."
+								" Exiting!");
+				return ACP_ERR_CONFIG_ABORT;
+			}else{
+				acp_config.stats_refresh_rate =1;
+			}
+		} else {
+			acp_config.stats_refresh_rate = val;
+		}
+	} else {
+		fprintf(stderr,
+				"\nWarning: Field stats_refresh_rate not found in config file!");
+	}
+	// read log file name
+		if (config_lookup_string(&cfg, "log_filename", &s_val)) {
+			if (!s_val){
+				if (config_fallback_enabled == false) {
+					fprintf(stderr,
+							"\nConfiguration prohibits using default values."
+									" Exiting!");
+					return ACP_ERR_CONFIG_ABORT;
+				}else{
+					strcpy(acp_config.log_filename,"acp_output.log");
+				}
+			}else{
+					strcpy(acp_config.log_filename,s_val);
+				}
+		} else {
+			fprintf(stderr,
+					"\nError: Field log_filename not found in config file!");
 		}
 	config_destroy(&cfg);
 //	print_loaded_configs();

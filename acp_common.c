@@ -65,7 +65,19 @@ int init_acp_state() {
     acp_state.shutdown_completed = false;
     acp_state.recieved_signal_code = 0;
     //TODO: also init global_labels
+
+    acp_state.acp_cmm_page_id_counter =1;
+    acp_state.acp_gmm_page_id_counter =1;
+    acp_state.log_ptr = NULL;
+
     return ACP_OK;
+}
+int open_log_file(){
+	if (!(acp_state.log_ptr = fopen(acp_config.log_filename,"w"))<0){
+		fprintf(stderr, "Failed to open log_file: %s",acp_config.log_filename);
+		return ACP_ERR_CONFIG_ABORT;
+	}
+	return ACP_OK;
 }
 /**
  * @brief Initialize window pointers of acp_state
@@ -106,7 +118,10 @@ void log_generic(const char* msg, log_level_t log_level) {
     move(LINES-1, 0);
     deleteln();
     //donot forget to add horizontal padding
+    fprintf(acp_state.log_ptr,"%s\n",msg);
+    fflush(acp_state.log_ptr);
     mvprintw(LINES - 1, beg_x + acp_state.hori_pad, "%s", msg);
+
     refresh();
 }
 
@@ -153,6 +168,10 @@ void report_error(error_codes_t error_code) {
     case ACP_ERR_THREAD_INIT:
     	snprintf(msg, LOG_BUFF_SIZE,
     	                 "Failed to create threads");
+    	break;
+    case ACP_ERR_TIME_READ:
+    	snprintf(msg, LOG_BUFF_SIZE,
+    	    	                 "Failed to read timestamp");
     	break;
     case ACP_ERR_GENERIC:
         snprintf(msg, LOG_BUFF_SIZE, "An unknown error has occurred!");
@@ -251,6 +270,8 @@ static void log_msg_to_console(const char *msg, log_level_t log_level) {
         snprintf(log_msg, LOG_BUFF_SIZE, "<C>%s", msg);
         break;
     }
+    fprintf(acp_state.log_ptr,"%s\n",msg);
+    fflush(acp_state.log_ptr);
     addCDKSwindow(acp_state.console, log_msg, BOTTOM);
 }
 /**
@@ -283,4 +304,36 @@ void display_help() {
     popupDialog(acp_state.master_screen, (CDK_CSTRING2) mesg, 4,
                 (CDK_CSTRING2) buttons, 1);
     redraw_cdkscreens();
+}
+/**
+ * @brief Allocates memory for n pages and adds them to the passed list.
+ * @param head_ele The first element of type page_table which stores pages.
+ * @param last_ele Pointer to the last element of the list.
+ * @param page_id_counter A pointer to the counter which will help in generating page_id for
+ * 			newly allocated pages.
+ * @param n_pages Denotes how many pages to be allocated. Note that if demand for
+ * 		memory to be allocated can not be met (due to out of memory or max. memory
+ * 		limit is reached ) n_pages will be modified to denote memory for how
+ * 		many pages were actually allocated.
+ * @return ACP_OK if succes else an error code.
+ */
+int page_memory_allocator(struct page_table *head_ele,struct page_table *last_ele,
+			unsigned int *page_id_counter,unsigned int *n_pages){
+	if (n_pages <=0)
+		return ACP_OK;
+
+
+	return ACP_OK;
+}
+/**
+ * @brief Returns current time in nanoseconds
+ * @return A long integer representing time in nano seconds.
+ */
+long int gettime_in_nsecs(){
+	struct timespec ts;
+	if(clock_gettime(CLOCK_REALTIME,&ts) == -1){
+		serror("Failed to get timestamp");
+		return 0;
+	}
+	return (ts.tv_nsec);
 }

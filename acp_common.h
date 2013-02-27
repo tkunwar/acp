@@ -17,6 +17,11 @@
 #include<curses.h>
 #include<signal.h>
 #include <stdarg.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <time.h>
+#include <sys/time.h>
 #include "acp_config.h"
 #include "acp_error.h"
 #include "cdk_wrap.h"
@@ -53,6 +58,31 @@ struct acp_global_labels {
     CDKLABEL *lblptr;
 };
 /**
+ * @enum storage_loc_t
+ * @brief Tells about current location of a given page.
+ */
+typedef enum{
+	SL_NCM, /**< storage location is non-compressed-memory */
+	SL_CC, /**< storage location is compressed cache*/
+	SL_SWAP /**< storage location is swap*/
+}storage_loc_t;
+/**
+ * @struct page_t
+ * @brief Defines properties of a page.
+ */
+struct page_t{
+	unsigned int page_id; /**< The page id*/
+	bool dirty; /**< Has the page been modified ?*/
+	char *page_data; /**< A pointer to a dynamically allocated page data of size
+	 	 	 	 	 4 KB */
+	storage_loc_t page_cur_loc; /**< Where is this page currently located ?*/
+	unsigned int LAT;
+};
+struct page_table{
+	struct page_t page;
+	struct page_table *next;
+};
+/**
  * @struct ACP_STATE
  * @brief Main structure which holds state information for acp. Almost all
  * major variables needed by acp are present in this structure. Note that
@@ -87,6 +117,9 @@ struct ACP_STATE {
     bool shutdown_completed ;
     int recieved_signal_code;
     pthread_t gmm_main_thread,cmm_main_thread;
+    unsigned int acp_gmm_page_id_counter;
+    unsigned int acp_cmm_page_id_counter;
+    FILE *log_ptr;
 } acp_state;
 
 //some debug,warning and error macros
@@ -177,4 +210,5 @@ void destroy_win(WINDOW *local_win);
 void set_focus_to_console();
 void destroy_cdkscreens();
 void display_help();
+long int gettime_in_nsecs();
 #endif

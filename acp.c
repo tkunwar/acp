@@ -39,6 +39,9 @@ int main(int argc, char *argv[]) {
 	if (load_config() == ACP_ERR_CONFIG_ABORT) {
 		exit(EXIT_FAILURE);
 	}
+	if (open_log_file() != ACP_OK) {
+		exit(EXIT_FAILURE);
+	}
 	//initialize curses and cdk mode
 	if (init_curses() != ACP_OK) {
 		exit(EXIT_FAILURE);
@@ -50,7 +53,7 @@ int main(int argc, char *argv[]) {
 	}
 //	abort();
 	//now start main worker threads
-	if (start_main_worker_threads()!=ACP_OK){
+	if (start_main_worker_threads() != ACP_OK) {
 		exit(EXIT_FAILURE);
 	}
 	//now wait for user input and process key-presses
@@ -97,12 +100,14 @@ void process_user_response() {
 void acp_shutdown() {
 	//Are we are exiting because we got a signal ?
 	if (acp_state.recieved_signal_code != 0) {
+		acp_state.shutdown_in_progress = true;
 		cleanup_after_failure();
 		exit(EXIT_FAILURE);
 	}
 
 	//other stuff related to cleanup but it's a normal cleanup
-
+	//signal that we are shutting down
+	acp_state.shutdown_in_progress = true;
 	//shut down GUI
 //	getch();
 	if (acp_state.gui_ready == TRUE) {
@@ -112,15 +117,16 @@ void acp_shutdown() {
 		destroy_cdkscreens();
 		endCDK();
 	}
-	//collect threads
-	if (pthread_join(acp_state.gmm_main_thread,NULL)!=0){
-		fprintf(stderr,"\nError in collecting thread: gmm_main");
+	//collect master threads
+	if (pthread_join(acp_state.gmm_main_thread, NULL ) != 0) {
+		fprintf(stderr, "\nError in collecting thread: gmm_main");
 		exit(EXIT_FAILURE);
 	}
 //	if (pthread_join(acp_state.cmm_main_thread,NULL)!=0){
 //			fprintf(stderr,"\nError in collecting thread: cmm_main");
 //			exit(EXIT_FAILURE);
 //	}
+	fclose(acp_state.log_ptr);
 	sigemptyset(&sigact.sa_mask);
 	exit(EXIT_SUCCESS);
 }
@@ -163,7 +169,7 @@ void init_signals(void) {
 static void signal_handler(int sig) {
 	//set the signal code that we got
 	acp_state.recieved_signal_code = sig;
-	var_debug("sig: %d",sig);
+	var_debug("sig: %d", sig);
 	if (sig == SIGHUP)
 		sdebug("Got signal SIGHUP");
 	if (sig == SIGSEGV) {
@@ -172,13 +178,13 @@ static void signal_handler(int sig) {
 	if (sig == SIGBUS) {
 		sdebug("Got signal SIGBUS");
 	}
-	var_debug("sig: %d",sig);
+	var_debug("sig: %d", sig);
 	if (sig == SIGQUIT)
 		sdebug("Got signal SIGQUIT");
-	var_debug("sig: %d",sig);
+	var_debug("sig: %d", sig);
 	if (sig == SIGKILL)
 		sdebug("Got signal SIGKILL");
-	var_debug("sig: %d",sig);
+	var_debug("sig: %d", sig);
 	if (sig == SIGINT)
 		sdebug("Got singal SIGINT");
 	// Attempt to perform cleanup_after_failure when we have SIGINT,SIGKILL and SIGQUIT
@@ -199,11 +205,19 @@ static void signal_handler(int sig) {
  *
  * Cleanup resources hold by threads. Note that we are exiting because
  * we received a signal.
+ * TODO: Should not we try to wait for child threads or if possible cancel them.
+ * 		Better would be that we allow threads to perform cleanup. Or atleast sleep
+ * 		for a second or two. This will give threads time to cleanup unless they
+ * 		are in waiting channel.
  */
 void cleanup_after_failure(void) {
 	// No access curses UI, back to plain stderr
 	sigemptyset(&sigact.sa_mask);
-
+	//collect master threads
+	if (pthread_join(acp_state.gmm_main_thread, NULL ) != 0) {
+		fprintf(stderr, "\nError in collecting thread: gmm_main");
+		exit(EXIT_FAILURE);
+	}
 	if (acp_state.gui_ready == TRUE) {
 		close_ui();
 	} else {
@@ -211,7 +225,7 @@ void cleanup_after_failure(void) {
 		destroy_cdkscreens();
 		endCDK();
 	}
-
+	fclose(acp_state.log_ptr);
 	//print a stack trace
 	if (acp_state.recieved_signal_code == SIGSEGV
 			|| acp_state.recieved_signal_code == SIGBUS) {
@@ -239,11 +253,12 @@ static void stack_trace() {
 	free(strings);
 }
 
-int start_main_worker_threads(){
+int start_main_worker_threads() {
 	//create main acp_gmm thread
-	if(pthread_create(&acp_state.gmm_main_thread,NULL,acp_gmm_main,NULL)!=0) {
-	        serror("\nThread1 creation failed ");
-	        return ACP_ERR_THREAD_INIT;
+	if (pthread_create(&acp_state.gmm_main_thread, NULL, acp_gmm_main, NULL )
+			!= 0) {
+		serror("\nThread1 creation failed ");
+		return ACP_ERR_THREAD_INIT;
 	}
 	return ACP_OK;
 }
