@@ -27,6 +27,7 @@ typedef enum {
     ACP_ERR_DRAW_WINDOWS,/**< Error in drawing windows*/
     ACP_ERR_THREAD_INIT, /**< Error in thread creation*/
     ACP_ERR_TIME_READ,
+    ACP_ERR_FILE_IO,
     ACP_ERR_GENERIC /** Generic error: not sure what it is, but it's fishy anyway*/
 } error_codes_t;
 /**

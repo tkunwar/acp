@@ -22,6 +22,8 @@
 #include <fcntl.h>
 #include <time.h>
 #include <sys/time.h>
+#include <stdbool.h>
+
 #include "acp_config.h"
 #include "acp_error.h"
 #include "cdk_wrap.h"
@@ -31,7 +33,15 @@
 #ifdef HAVE_XCURSES
 char *XCursesProgramName = "ACP";
 #endif
-
+#ifndef __USE_GNU
+	#define __USE_GNU
+#endif
+/**
+ * @def PARENT_WAIT_FOR_CHILD_THREADS
+ * @brief Defines how long parent thread waits for all child threads before
+ * 		doing a final exit.
+ */
+#define PARENT_WAIT_FOR_CHILD_THREADS 3
 /**
  * @def LOG_BUFF_SIZE
  * @brief Size of log buffer used in logging macros.

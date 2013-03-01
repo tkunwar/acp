@@ -1,12 +1,20 @@
 /**
  * @file acp_gmm_utils.c
  * @brief This file code to implement functionality for acp's GMM module.
+ *
+ * Warning: no routine from one thread will directly access a routine in
+ * 		another thread.
+ * since many routines from gmm_mem and gmm_swap will be using structures swap_table
+ * and gmm_mem_page_table. they can be made global structures (accessible across this file)
+ * however any attempt to access them should be through mutexes only.
+ *
  */
 #include "acp_gmm_utils.h"
 static void *gmm_swap_stats_collector(void *args);
 static void *gmm_mem_stats_collector(void *args);
 static void *gmm_swap_manager(void *args);
 static void *gmm_mem_manager(void *args);
+static int create_swap_file(const char *filename,unsigned int max_pages);
 
 static void init_acp_gmm_state() {
 	//these two variables wont be modifed during program run
@@ -54,7 +62,7 @@ void *acp_gmm_main(void *args) {
 	var_debug("acp_gmm: max_mem(B): [%lu] max_pages: [%u] st_pages: [%u]",
 			gmm_module_state.max_mem_limit, gmm_module_state.max_page_limit, gmm_module_state.swappiness_threshold_in_pages);
 	//lets limit values for now
-	gmm_module_state.max_page_limit = 100;
+//	gmm_module_state.max_page_limit = 100;
 	var_debug("stats_ref_rate: %d log: %s",
 			acp_config.stats_refresh_rate, acp_config.log_filename);
 	/**
@@ -150,6 +158,12 @@ static void *gmm_mem_manager(void *args) {
  */
 static void *gmm_swap_manager(void *args) {
 	int i = 0;
+	struct swap_page_table_t *swap_table =NULL;
+	//create the swap file
+	if (create_swap_file(GMM_SWAP_FILE,gmm_module_state.max_swap_pages) != ACP_OK){
+		//any cleanup if needed
+		pthread_exit(NULL);
+	}
 	while (1) {
 		if (acp_state.shutdown_in_progress == true) {
 			//time to clean up
@@ -160,7 +174,60 @@ static void *gmm_swap_manager(void *args) {
 		sleep(1);
 	}
 	sdebug("gmm_swap_manager: shutting down");
+	//remove swap file
+	//unlink(GMM_SWAP_FILE);
+	//delete swap table
+	cleanup_swap_table();
 	pthread_exit(NULL );
+}
+static int create_swap_file(const char *filename,unsigned int max_pages){
+	struct swap_file_record_t file_record;
+	int i=0,fd=-1;
+	if ((fd = open(filename,O_CREAT|O_WRONLY)) == -1){
+		var_error("Failed to open file: %s",filename);
+		return ACP_ERR_FILE_IO;
+	}
+	//create an empty file_record
+	file_record.page_id = 0;
+	file_record.valid_record = false;
+
+	for(i=0;i<max_pages;i++){
+		if ((write(fd,&file_record,sizeof(file_record))) != sizeof(file_record)){
+			var_error("Could not write bytes into %s .",filename);
+			return ACP_ERR_FILE_IO;
+		}
+	}
+	//do a buffer flush
+	fdatasync(fd);
+	close(fd);
+	return ACP_OK;
+}
+static int write_page_to_swap(unsigned int page_id){
+	/*
+	 * 1. since we have page_id of the page that needs to be swapped out. Find
+	 * 	the lookup_page_in_page_table() of gmm_mem module and retrieve the entire
+	 * 	struct page_table_t *page_node .
+	 *
+	 * 3. once we get it signal to gmm_mem module through shared message variables
+	 * 		that it can clear that page.
+	 *
+	 * 4. create an entry in swap_page_table
+	 * 2. write page info to a swap_record in swap_file
+	 */
+}
+static int load_page_from_swap(struct page_table *page,unsigned int page_id){
+	/*
+	 * 1. retrieve record index from swap_table by querying page_id in it.
+	 * 2. Using this record_index go to the position where this page is located
+	 * 		and load it in a struct swap_record_t structure.
+	 * 3. Mark this swap record as invalid.
+	 */
+}
+static int lookup_page_in_swap_table(unsigned int page_id,unsigned int *rreord_index){
+	/*
+	 * 1. find the record_id of queried page_id.
+	 * 2. if not found set the record_id to 0 and return an error
+	 */
 }
 /**
  * @brief The work area of gmm_memory stats collector thread.
@@ -180,6 +247,7 @@ static void *gmm_mem_stats_collector(void *args) {
 	sdebug("gmm_mem_stats_collector: shutting down");
 	pthread_exit(NULL );
 }
+
 /**
  * @brief The work area of gmm_swap stats collector thread.
  * @param args Threads args
@@ -209,3 +277,9 @@ static void *gmm_swap_stats_collector(void *args) {
 	sdebug("gmm_swap_stats_collector: shutting down");
 	pthread_exit(NULL );
 }
+//static int gmm_swap_cleanup(){
+//
+//}
+//static int gmm_mem_cleanup(){
+//
+//}

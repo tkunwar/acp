@@ -18,13 +18,5 @@ typedef enum{
 	off, /**< Signifies that value is reset */
 	on /**< Signifies that value is set */
 } ON_OFF;
-/**
- * @enum bool
- * @brief Declares two symbols true and false meaning 1 and 0 respectively.
- */
-typedef enum {
-		false, /**< Means that a variable is reset */
-		true /**< Means that a variable is set */
-	} bool;
 
 #endif /* ACP_DTYPES_H_ */

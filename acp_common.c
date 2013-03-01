@@ -331,7 +331,7 @@ int page_memory_allocator(struct page_table *head_ele,struct page_table *last_el
  */
 long int gettime_in_nsecs(){
 	struct timespec ts;
-	if(clock_gettime(CLOCK_REALTIME,&ts) == -1){
+	if(clock_gettime(CLOCK_MONOTONIC,&ts) == -1){
 		serror("Failed to get timestamp");
 		return 0;
 	}

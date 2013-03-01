@@ -108,6 +108,10 @@ void acp_shutdown() {
 	//other stuff related to cleanup but it's a normal cleanup
 	//signal that we are shutting down
 	acp_state.shutdown_in_progress = true;
+
+	var_debug("Parent sleeping for %d seconds to let child threads finish.",PARENT_WAIT_FOR_CHILD_THREADS);
+	//wait for child threads
+	sleep(PARENT_WAIT_FOR_CHILD_THREADS);
 	//shut down GUI
 //	getch();
 	if (acp_state.gui_ready == TRUE) {
