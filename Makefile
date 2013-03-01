@@ -30,3 +30,4 @@ debug:
 clean:
 	rm -f *.o *.out acp core
 	rm -r -f doxygen-output
+	rm -f *.file
