@@ -17,7 +17,7 @@
 #include<unistd.h>
 #include <string.h>
 #include<libconfig.h>
-
+#include <stdbool.h>
 #include "acp_error.h"
 
 /*
