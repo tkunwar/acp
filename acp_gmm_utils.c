@@ -175,9 +175,9 @@ static void *gmm_swap_manager(void *args) {
 	}
 	sdebug("gmm_swap_manager: shutting down");
 	//remove swap file
-	//unlink(GMM_SWAP_FILE);
+	unlink(GMM_SWAP_FILE);
 	//delete swap table
-	cleanup_swap_table();
+//	cleanup_swap_table();
 	pthread_exit(NULL );
 }
 static int create_swap_file(const char *filename,unsigned int max_pages){
