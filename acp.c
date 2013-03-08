@@ -13,6 +13,8 @@ static void signal_handler(int);
 static void cleanup_after_failure(void);
 void init_signals(void);
 static void stack_trace();
+int start_main_worker_threads();
+
 struct sigaction sigact;
 char *progname;
 

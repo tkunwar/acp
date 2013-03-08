@@ -23,7 +23,8 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdbool.h>
-
+#include <error.h>
+#include <errno.h>
 #include "acp_config.h"
 #include "acp_error.h"
 #include "cdk_wrap.h"
@@ -47,6 +48,7 @@ char *XCursesProgramName = "ACP";
  * @brief Size of log buffer used in logging macros.
  */
 #define LOG_BUFF_SIZE 200
+#define ACP_PAGE_SIZE 4096
 /**
  * @struct window_state_t
  * @brief A structure for holding window related information.
@@ -83,8 +85,7 @@ typedef enum{
 struct page_t{
 	unsigned int page_id; /**< The page id*/
 	bool dirty; /**< Has the page been modified ?*/
-	char *page_data; /**< A pointer to a dynamically allocated page data of size
-	 	 	 	 	 4 KB */
+	char page_data[ACP_PAGE_SIZE]; /**< page data of size 4 KB */
 	storage_loc_t page_cur_loc; /**< Where is this page currently located ?*/
 	unsigned int LAT;
 };
@@ -102,7 +103,7 @@ struct ACP_STATE {
     struct window_state_t menubar_win, GMM_win, CMM_win, console_win;
     // ----------global labels------------------------
     // mostly these labels will be updated by separate threads
-    struct acp_global_labels agl_gmm_total_memory,agl_gmm_total_pages,agl_gmm_pages_used;
+    struct acp_global_labels agl_gmm_total_memory,agl_gmm_total_pages,agl_gmm_pages_active;
     struct acp_global_labels agl_gmm_swap_max_size,agl_gmm_swap_used_space,
             agl_gmm_swap_pageout_timelag,agl_gmm_swap_pagein_timelag;
 
@@ -127,7 +128,7 @@ struct ACP_STATE {
     bool shutdown_completed ;
     int recieved_signal_code;
     pthread_t gmm_main_thread,cmm_main_thread;
-    unsigned int acp_gmm_page_id_counter;
+
     unsigned int acp_cmm_page_id_counter;
     FILE *log_ptr;
 } acp_state;
@@ -221,4 +222,5 @@ void set_focus_to_console();
 void destroy_cdkscreens();
 void display_help();
 long int gettime_in_nsecs();
+int open_log_file();
 #endif

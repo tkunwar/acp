@@ -342,7 +342,7 @@ static void draw_GMM_window() {
     //x_displacement tells how much x positions in right direction we have
     // to create our label which will display values
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_gmm_total_memory.lblptr = newCDKLabel(
             acp_state.GMM_win.cdksptr, acp_state.GMM_win.cur_x + x_displacement,
             acp_state.GMM_win.cur_y + 1, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -361,7 +361,7 @@ static void draw_GMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_gmm_total_pages.lblptr = newCDKLabel(
             acp_state.GMM_win.cdksptr, acp_state.GMM_win.cur_x + x_displacement,
             acp_state.GMM_win.cur_y + 2, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -380,17 +380,17 @@ static void draw_GMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
-    acp_state.agl_gmm_pages_used.lblptr = newCDKLabel(acp_state.GMM_win.cdksptr,
+    lblText[0] = "000000000000";
+    acp_state.agl_gmm_pages_active.lblptr = newCDKLabel(acp_state.GMM_win.cdksptr,
                                           acp_state.GMM_win.cur_x + x_displacement,
                                           acp_state.GMM_win.cur_y + 3, (CDK_CSTRING2) lblText, 1, FALSE,
                                           FALSE);
-    drawCDKLabel(acp_state.agl_gmm_pages_used.lblptr,
-                 ObjOf (acp_state.agl_gmm_pages_used.lblptr)->box);
-    acp_state.agl_gmm_pages_used.beg_x = acp_state.GMM_win.cur_x
+    drawCDKLabel(acp_state.agl_gmm_pages_active.lblptr,
+                 ObjOf (acp_state.agl_gmm_pages_active.lblptr)->box);
+    acp_state.agl_gmm_pages_active.beg_x = acp_state.GMM_win.cur_x
                                          + x_displacement;
-    acp_state.agl_gmm_pages_used.beg_y = acp_state.GMM_win.cur_y + 3;
-    acp_state.agl_gmm_pages_used.win = acp_state.GMM_win;
+    acp_state.agl_gmm_pages_active.beg_y = acp_state.GMM_win.cur_y + 3;
+    acp_state.agl_gmm_pages_active.win = acp_state.GMM_win;
     //--------------section swap_status----------------
     lblText[0] = "</U>Swap Status";
     acp_state.GMM_win.cur_x += 70;
@@ -408,7 +408,7 @@ static void draw_GMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_gmm_swap_max_size.lblptr = newCDKLabel(
                 acp_state.GMM_win.cdksptr, acp_state.GMM_win.cur_x + x_displacement,
                 acp_state.GMM_win.cur_y + 1, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -427,7 +427,7 @@ static void draw_GMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_gmm_swap_used_space.lblptr = newCDKLabel(
                 acp_state.GMM_win.cdksptr, acp_state.GMM_win.cur_x + x_displacement,
                 acp_state.GMM_win.cur_y + 2, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -446,7 +446,7 @@ static void draw_GMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_gmm_swap_pageout_timelag.lblptr = newCDKLabel(
                 acp_state.GMM_win.cdksptr, acp_state.GMM_win.cur_x + x_displacement,
                 acp_state.GMM_win.cur_y + 3, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -465,7 +465,7 @@ static void draw_GMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_gmm_swap_pagein_timelag.lblptr = newCDKLabel(
                 acp_state.GMM_win.cdksptr, acp_state.GMM_win.cur_x + x_displacement,
                 acp_state.GMM_win.cur_y + 4, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -507,7 +507,7 @@ static void draw_CMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_cmm_ucm_cur_memsize.lblptr = newCDKLabel(
                 acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
                 acp_state.CMM_win.cur_y + 1, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -526,7 +526,7 @@ static void draw_CMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_cmm_ucm_max_pages.lblptr = newCDKLabel(
                 acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
                 acp_state.CMM_win.cur_y + 2, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -545,7 +545,7 @@ static void draw_CMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_cmm_ucm_pages_used.lblptr = newCDKLabel(
                 acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
                 acp_state.CMM_win.cur_y + 3, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -572,7 +572,7 @@ static void draw_CMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_cmm_cc_cur_memsize.lblptr = newCDKLabel(
                 acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
                 acp_state.CMM_win.cur_y + 1, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -591,7 +591,7 @@ static void draw_CMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_cmm_cc_stored_pages.lblptr = newCDKLabel(
                 acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
                 acp_state.CMM_win.cur_y + 2, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -610,7 +610,7 @@ static void draw_CMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_cmm_cc_cells.lblptr = newCDKLabel(acp_state.CMM_win.cdksptr,
                                         acp_state.CMM_win.cur_x + x_displacement,
                                         acp_state.CMM_win.cur_y + 3, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -628,7 +628,7 @@ static void draw_CMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_cmm_cc_pageout_timelag.lblptr = newCDKLabel(
                 acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
                 acp_state.CMM_win.cur_y + 4, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -647,7 +647,7 @@ static void draw_CMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_cmm_cc_pagein_timelag.lblptr = newCDKLabel(
                 acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
                 acp_state.CMM_win.cur_y + 5, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -668,15 +668,15 @@ static void draw_CMM_window() {
 
     acp_state.CMM_win.cur_x -= 5;
     lblText[0] = "Size:";
-    lblTitle = newCDKLabel(acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x,
+    lblTitle = newCDKLabel(acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x+5,
                            acp_state.CMM_win.cur_y + 1, (CDK_CSTRING2) lblText, 1, FALSE,
                            FALSE);
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_cmm_swap_max_size.lblptr = newCDKLabel(
-                acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
+                acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x+5 + x_displacement,
                 acp_state.CMM_win.cur_y + 1, (CDK_CSTRING2) lblText, 1, FALSE,
                 FALSE);
     drawCDKLabel(acp_state.agl_cmm_swap_max_size.lblptr,
@@ -693,7 +693,7 @@ static void draw_CMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_cmm_swap_used_space.lblptr = newCDKLabel(
                 acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
                 acp_state.CMM_win.cur_y + 2, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -712,7 +712,7 @@ static void draw_CMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_cmm_swap_pageout_timelag.lblptr = newCDKLabel(
                 acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
                 acp_state.CMM_win.cur_y + 3, (CDK_CSTRING2) lblText, 1, FALSE,
@@ -731,7 +731,7 @@ static void draw_CMM_window() {
     drawCDKLabel(lblTitle, ObjOf (lblTitle)->box);
 
     x_displacement = strlen(lblText[0]) + 1;
-    lblText[0] = "00";
+    lblText[0] = "000000000000";
     acp_state.agl_cmm_swap_pagein_timelag.lblptr = newCDKLabel(
                 acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
                 acp_state.CMM_win.cur_y + 4, (CDK_CSTRING2) lblText, 1, FALSE,

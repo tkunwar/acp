@@ -67,7 +67,6 @@ int init_acp_state() {
     //TODO: also init global_labels
 
     acp_state.acp_cmm_page_id_counter =1;
-    acp_state.acp_gmm_page_id_counter =1;
     acp_state.log_ptr = NULL;
 
     return ACP_OK;
@@ -305,26 +304,7 @@ void display_help() {
                 (CDK_CSTRING2) buttons, 1);
     redraw_cdkscreens();
 }
-/**
- * @brief Allocates memory for n pages and adds them to the passed list.
- * @param head_ele The first element of type page_table which stores pages.
- * @param last_ele Pointer to the last element of the list.
- * @param page_id_counter A pointer to the counter which will help in generating page_id for
- * 			newly allocated pages.
- * @param n_pages Denotes how many pages to be allocated. Note that if demand for
- * 		memory to be allocated can not be met (due to out of memory or max. memory
- * 		limit is reached ) n_pages will be modified to denote memory for how
- * 		many pages were actually allocated.
- * @return ACP_OK if succes else an error code.
- */
-int page_memory_allocator(struct page_table *head_ele,struct page_table *last_ele,
-			unsigned int *page_id_counter,unsigned int *n_pages){
-	if (n_pages <=0)
-		return ACP_OK;
 
-
-	return ACP_OK;
-}
 /**
  * @brief Returns current time in nanoseconds
  * @return A long integer representing time in nano seconds.

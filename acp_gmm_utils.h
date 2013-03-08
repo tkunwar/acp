@@ -8,6 +8,17 @@
 #include "acp_common.h"
 
 #define GMM_SWAP_FILE "gmm_swap.file"
+/**
+ * @struct swap_page_table_t
+ * @brief A linked list of pages that are stored in swap file. A lookup in this
+ * 			table for page will tell whether a page is stored in the swap file or not.
+ */
+struct swap_page_table_t{
+	unsigned int page_id; /**< Page id of a page stored in swap file.*/
+	unsigned int swap_record_index; /**< Index of record in swap file.*/
+	struct swap_page_table_t *next;
+};
+
 // warning : variables in this structure will be updated by threads so do not
 // modify the values directly
 struct gmm_module_state_t {
@@ -23,8 +34,8 @@ struct gmm_module_state_t {
 
 	//mutable variables
 	unsigned long int total_memory; /**< How many bytes currently allocated*/
-	unsigned int total_pages; /**< Total pages allocated so far, including pages swapped and active*/
-	unsigned int pages_active; /**< Total active pages*/
+	unsigned  int total_pages; /**< Total pages allocated so far, including pages swapped and active*/
+	unsigned  int pages_active; /**< Total active pages*/
 
 	//threads that we will be working with
 	pthread_t gmm_mem_manager; /**< Memory manager thread. will allocate new pages to global_page_table*/
@@ -35,17 +46,20 @@ struct gmm_module_state_t {
 	struct page_table *page_table; /**< Global page table for gmm module. Points to first element */
 	struct page_table *page_table_last_ele; /**< Always points to the last non-null element of gmm's global
 	 	 	 	 	 	 	 	 	 	 	 page table*/
+	unsigned int gmm_page_id_counter;
+
+	struct swap_page_table_t *swap_table;
+	struct swap_page_table_t *swap_table_last_ele;
+	unsigned long int page_out_timelag;
+	unsigned long int used_swap_space;
 } gmm_module_state;
-/**
- * @struct swap_page_table_t
- * @brief A linked list of pages that are stored in swap file. A lookup in this
- * 			table for page will tell whether a page is stored in the swap file or not.
- */
-struct swap_page_table_t{
-	unsigned int page_id; /**< Page id of a page stored in swap file.*/
-	unsigned int swap_record_index; /**< Index of record in swap file.*/
-	struct swap_page_table_t *next;
-};
+struct gmm_mutexes_t{
+	pthread_mutex_t gmm_mem_page_table_mutex; /**< mutex for accessing and adding new nodes in the
+		 	 	 	 	 	 	 	 	 	 	 	 gmm page table*/
+	pthread_mutex_t gmm_mem_stats_mutex; /**< For protecting total_pages,pages_active*/
+	pthread_mutex_t gmm_swap_stats_mutex; /**< For protecting variables in swap section*/
+	pthread_mutex_t gmm_swap_table_mutex; /**< For protecting swap_table in swap section*/
+}gmm_mutexes;
 /**
  * @struct swap_file_record_t
  * @brief Defines a record in swap file.
