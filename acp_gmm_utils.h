@@ -52,6 +52,7 @@ struct gmm_module_state_t {
 	struct swap_page_table_t *swap_table_last_ele;
 	unsigned long int page_out_timelag;
 	unsigned long int used_swap_space;
+
 } gmm_module_state;
 struct gmm_mutexes_t{
 	pthread_mutex_t gmm_mem_page_table_mutex; /**< mutex for accessing and adding new nodes in the
@@ -59,6 +60,7 @@ struct gmm_mutexes_t{
 	pthread_mutex_t gmm_mem_stats_mutex; /**< For protecting total_pages,pages_active*/
 	pthread_mutex_t gmm_swap_stats_mutex; /**< For protecting variables in swap section*/
 	pthread_mutex_t gmm_swap_table_mutex; /**< For protecting swap_table in swap section*/
+	pthread_mutex_t gmm_cdk_screen_mutex; /**< To ensure that only one thread is writing to UI*/
 }gmm_mutexes;
 /**
  * @struct swap_file_record_t

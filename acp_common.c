@@ -120,7 +120,6 @@ void log_generic(const char* msg, log_level_t log_level) {
     fprintf(acp_state.log_ptr,"%s\n",msg);
     fflush(acp_state.log_ptr);
     mvprintw(LINES - 1, beg_x + acp_state.hori_pad, "%s", msg);
-
     refresh();
 }
 
@@ -194,11 +193,12 @@ void close_ui() {
     //all windows and associated cdkscreens are gone now
     acp_state.gui_ready = false;
 
-    sdebug("Press any key to exit!!");
-    getch();
+//    sdebug("Press any key to exit!!");
+//    getch();
 
     /* Exit CDK. */
     endCDK();
+//    refresh();
     endwin();
 }
 /**
@@ -311,9 +311,27 @@ void display_help() {
  */
 long int gettime_in_nsecs(){
 	struct timespec ts;
-	if(clock_gettime(CLOCK_MONOTONIC,&ts) == -1){
+	if(clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&ts) == -1){
 		serror("Failed to get timestamp");
 		return 0;
 	}
-	return (ts.tv_nsec);
+
+	return ((ts.tv_nsec/1000));
+}
+
+void gettime_in_mseconds(){
+	struct timeval start, end;
+
+	    long mtime, seconds, useconds;
+
+	    gettimeofday(&start, NULL);
+	    usleep(2000);
+	    gettimeofday(&end, NULL);
+
+	    seconds  = end.tv_sec  - start.tv_sec;
+	    useconds = end.tv_usec - start.tv_usec;
+
+	    mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
+
+	    printf("Elapsed time: %ld milliseconds\n", mtime);
 }

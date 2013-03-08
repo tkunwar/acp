@@ -27,7 +27,7 @@ char *progname;
  */
 int main(int argc, char *argv[]) {
 	progname = *(argv);
-	atexit(acp_shutdown);
+//	atexit(acp_shutdown);
 	init_signals();
 
 	CDKparseParams(argc, argv, &acp_state.params, CDK_CLI_PARAMS);
@@ -74,7 +74,7 @@ void process_user_response() {
 	while ((ch = getch())) {
 		switch (ch) {
 		case KEY_F(4):
-			exit(EXIT_SUCCESS);
+			acp_shutdown();
 			break;
 		case KEY_F(2):
 			display_help();
@@ -110,12 +110,10 @@ void acp_shutdown() {
 	//other stuff related to cleanup but it's a normal cleanup
 	//signal that we are shutting down
 	acp_state.shutdown_in_progress = true;
-
 	var_debug("Parent sleeping for %d seconds to let child threads finish.",PARENT_WAIT_FOR_CHILD_THREADS);
 	//wait for child threads
 	sleep(PARENT_WAIT_FOR_CHILD_THREADS);
 	//shut down GUI
-//	getch();
 	if (acp_state.gui_ready == TRUE) {
 		close_ui();
 	} else {
@@ -134,7 +132,8 @@ void acp_shutdown() {
 //	}
 	fclose(acp_state.log_ptr);
 	sigemptyset(&sigact.sa_mask);
-	exit(EXIT_SUCCESS);
+//	exit(EXIT_SUCCESS);
+	ExitProgram (EXIT_SUCCESS);
 }
 /**
  * @brief Intialize our signal handler
@@ -175,27 +174,27 @@ void init_signals(void) {
 static void signal_handler(int sig) {
 	//set the signal code that we got
 	acp_state.recieved_signal_code = sig;
-	var_debug("sig: %d", sig);
-	if (sig == SIGHUP)
-		sdebug("Got signal SIGHUP");
-	if (sig == SIGSEGV) {
-		sdebug("Got signal SIGSEGV");
-	}
-	if (sig == SIGBUS) {
-		sdebug("Got signal SIGBUS");
-	}
-	var_debug("sig: %d", sig);
-	if (sig == SIGQUIT)
-		sdebug("Got signal SIGQUIT");
-	var_debug("sig: %d", sig);
-	if (sig == SIGKILL)
-		sdebug("Got signal SIGKILL");
-	var_debug("sig: %d", sig);
-	if (sig == SIGINT)
-		sdebug("Got singal SIGINT");
+//	var_debug("Got signal: %d", sig);
+//	if (sig == SIGHUP)
+//		sdebug("Got signal SIGHUP");
+//	if (sig == SIGSEGV) {
+//		sdebug("Got signal SIGSEGV");
+//	}
+//	if (sig == SIGBUS) {
+//		sdebug("Got signal SIGBUS");
+//	}
+//	var_debug("sig: %d", sig);
+//	if (sig == SIGQUIT)
+//		sdebug("Got signal SIGQUIT");
+//	var_debug("sig: %d", sig);
+//	if (sig == SIGKILL)
+//		sdebug("Got signal SIGKILL");
+//	var_debug("sig: %d", sig);
+//	if (sig == SIGINT)
+//		sdebug("Got singal SIGINT");
 	// Attempt to perform cleanup_after_failure when we have SIGINT,SIGKILL and SIGQUIT
 	// else give up
-	if ((sig == SIGINT) || (sig == SIGQUIT) || (sig == SIGKILL)) {
+//	if ((sig == SIGINT) || (sig == SIGQUIT) || (sig == SIGKILL)) {
 		sdebug("Prepairing to exit gracefully..");
 		acp_state.shutdown_in_progress = true;
 		//wait while cleanup_after_failure is finished
@@ -203,8 +202,9 @@ static void signal_handler(int sig) {
 //		while(acp_state.shutdown_completed==false){
 //			sleep(1);
 //		}
-	}
-	exit(EXIT_FAILURE);
+//	}
+//	exit(EXIT_FAILURE);
+	acp_shutdown();
 }
 /**
  * @brief This routine performs cleanup after a failure.
