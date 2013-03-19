@@ -9,13 +9,14 @@ CC=gcc
 # CFLAGS=-Wall -g -lcdk -lncurses -lconfig
 # when using libconfig in static linking mode 
 # use this
-CFLAGS=-Wall -g -lcdk -lncurses -lpthread -lrt
+CFLAGS=-Wall -fomit-frame-pointer -g -lcdk -lncurses -lpthread -lrt
 LIBS=libconfig.a
 
 #Uncomment the line below to compile on Mac
 #LIBS=-liconv
 all:acp
-acp: acp.o acp_gui.o acp_common.o acp_config.o acp_gmm_utils.o acp_cmm_utils.o
+acp: acp.o acp_gui.o acp_common.o acp_config.o acp_gmm_utils.o acp_cmm_utils.o \
+	minilzo.o
 	$(CC) -o $@ $^ $(LIBS) $(CFLAGS)
 
 %.o: %.c

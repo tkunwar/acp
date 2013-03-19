@@ -31,6 +31,8 @@ typedef enum {
     ACP_ERR_NO_MEM,
     ACP_ERR_MEM_FAULT,
     ACP_ERR_NO_SUCH_ELEMENT,
+    ACP_ERR_LZO_INIT,
+    ACP_ERR_LZO_INTERNAL,
     ACP_ERR_GENERIC /** Generic error: not sure what it is, but it's fishy anyway*/
 } error_codes_t;
 /**
