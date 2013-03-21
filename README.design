@@ -367,9 +367,15 @@ as General Memory Model (GMM)and other as Compressed memory Model(CMM).
 				Warning : Buffers and shared resources must not be cleaned by child
 							threads or (non-owner threads). Only those who created 
 							the rsources will be responsible for cleaning it up.
-							
+
 			2. now cleanup all resources
 			3. return 
-
-
 	}
+
+=====================Debugging===================================
+1. generate core dump:
+	in the same terminal as the running app (create a make target for this)
+	$ulimit -c unlimited
+	Now it will create a core dump file 
+
+	

@@ -223,4 +223,12 @@ void destroy_cdkscreens();
 void display_help();
 long int gettime_in_nsecs();
 int open_log_file();
+
+// store and load routines for 16,32 and 64 bit integers into/from unsigned char buffers
+void store16(unsigned char *buff, short int num) ;
+void load16(unsigned char *buff, unsigned short int *num);
+void store32(unsigned char *buff, unsigned int num);
+void load32(unsigned char *buff, unsigned int *num);
+void store64(unsigned char *buff, unsigned long int num);
+void load64(unsigned char *buff, unsigned long int *num);
 #endif

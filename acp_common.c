@@ -336,3 +336,82 @@ void gettime_in_mseconds(){
 
 	    printf("Elapsed time: %ld milliseconds\n", mtime);
 }
+/*
+ * A bit about integer sizes on a x64 Intel machine
+ * sizeof short int: 2 bytes
+ * sizeof int : 4 bytes
+ * sizeof long int: 8 bytes
+ *
+ * Sizes of unsigned and signed versions are same only their range differs.
+ */
+/**
+ * @brief Stores a 16 bit unsigned integer to a unsigned character buffer
+ */
+void store16(unsigned char *buff, short int num) {
+	buff[0] = num >> 8 & 0x00FF;
+	buff[1] = num & 0x00FF;
+}
+
+/**
+ * @brief Loads an 16 bit unsigned integer from a buffer where it's been
+ * 		 stored in a byte packed manner.
+ */
+void load16(unsigned char *buff, unsigned short int *num) {
+	*num = 0x0000;
+	*num = *num | (unsigned short int) buff[0];
+	*num = (*num << 8) | (unsigned short int) buff[1];
+}
+
+/**
+ * @brief Stores a 32 bit unsigned integer into an unsigned character
+ * 				buffer.
+ */
+void store32(unsigned char *buff, unsigned int num) {
+	buff[0] = (num >> 24) & 0x000000FF;
+	buff[1] = (num >> 16) & 0x000000FF;
+	buff[2] = (num >> 8) & 0x000000FF;
+	buff[3] = (num) & 0x000000FF;
+}
+
+/**
+ * @brief Loads a 32 bit unsigned integer from a unsigned buffer
+ */
+void load32(unsigned char *buff, unsigned int *num) {
+	*num = 0x00000000;
+	*num = *num | (unsigned short int) buff[0];
+	*num = (*num << 8) | (unsigned short int) buff[1];
+	*num = (*num << 8) | (unsigned short int) buff[2];
+	*num = (*num << 8) | (unsigned short int) buff[3];
+}
+
+/**
+ * @brief Packs a 64 bit unsigned integer into a buffer of type
+ * 		 unsigned char
+ */
+void store64(unsigned char *buff, unsigned long int num) {
+	buff[0] = (num >> 56) & 0x00000000000000FF;
+	buff[1] = (num >> 48) & 0x00000000000000FF;
+	buff[2] = (num >> 40) & 0x00000000000000FF;
+	buff[3] = (num >> 32) & 0x00000000000000FF;
+	buff[4] = (num >> 24) & 0x00000000000000FF;
+	buff[5] = (num >> 16) & 0x00000000000000FF;
+	buff[6] = (num >> 8) & 0x00000000000000FF;
+	buff[7] = (num) & 0x00000000000000FF;
+}
+
+/**
+ * @brief Convert a 64 bit unsigned integer packed into buffer back
+ * 		 to a 64 bit unsigned int
+ */
+void load64(unsigned char *buff, unsigned long int *num) {
+	*num = 0x0000000000000000;
+	*num = *num | (unsigned short int) buff[0];
+	*num = (*num << 8) | (unsigned short int) buff[1];
+	*num = (*num << 8) | (unsigned short int) buff[2];
+	*num = (*num << 8) | (unsigned short int) buff[3];
+	*num = (*num << 8) | (unsigned short int) buff[4];
+	*num = (*num << 8) | (unsigned short int) buff[5];
+	*num = (*num << 8) | (unsigned short int) buff[6];
+	*num = (*num << 8) | (unsigned short int) buff[7];
+}
+

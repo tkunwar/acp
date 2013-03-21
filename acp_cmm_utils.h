@@ -8,7 +8,38 @@
 #ifndef ACP_CMM_UTILS_H_
 #define ACP_CMM_UTILS_H_
 #include "acp_common.h"
+
 #define CMM_SWAP_FILE "cmm_swap.file"
+/**
+ * @struct compressed_page_t
+ * @brief Data structure for storing a list of compressed pages allocate at heap.
+ */
+struct compressed_page_t{
+	unsigned int page_id; /**< page_id of stored page*/
+	unsigned char* page_data; /**< pointer to compressed buffer */
+	_uint16 page_len;
+//	struct compressed_page_t *next;
+};
+/**
+ * @def MAX_CELL_DATA_SIZE
+ * @brief Defines the max. size of data field of a cell = 12 KB
+ */
+#define MAX_CELL_DATA_SIZE 12288
+/**
+ * @struct cell_t
+ * @brief Data structure for cell. Stores a list of compressed pages using best
+ * 			fit strategy. Standard cell size is 12 KB.
+ */
+struct cell_t{
+	unsigned int available_size; /**< How much space is available in this cell (in bytes) ?*/
+	unsigned int stored_page_count; /**< Count of compressed pages stored */
+	unsigned int cell_id;/**< This cell needs an unique id too.*/
+	unsigned char data[MAX_CELL_DATA_SIZE]; /**< Stores compressed pages. Pages are stored in this format.
+	 	 	 	 	 	 	 	 	 	 	 	|<page_id (_uint32)>|<page_len>(_uint16)|<page_len bytes of binary data>|
+	 	 	 	 	 	 	 	 	 	 	 	The idea is to store as much pages as we can.*/
+	struct cell_t *next;
+};
+
 /**
  * @struct cmm_module_state_t
  * @brief The state structure for acp cmm module.
@@ -47,6 +78,15 @@ struct cmm_module_state_t {
 	unsigned long int page_out_timelag;
 	unsigned long int used_swap_space;
 
+	unsigned int caching_threshold_in_pages; /**< When do we begin caching?*/
+	unsigned long int max_caching_size; /**< This is the max. limit of memory that we will
+	 	 	 	 	 	 	 	 	 use for caching the pages in cc. This parameter is
+	 	 	 	 	 	 	 	 	 specified in bytes.*/
+	unsigned int cell_id_counter;
+	struct cell_t *cell_table; /**< List of cells maintained for storing pages in compressed pages.*/
+	struct cell_t *cell_table_last_ele; /**< Points to last element stored in cell_table.*/
+	unsigned int max_cell_count; /**< Max. no. of cells that can be allocated.*/
+	unsigned int cells_active;
 } cmm_module_state;
 
 struct cmm_mutexes_t{
@@ -57,31 +97,8 @@ struct cmm_mutexes_t{
 	pthread_mutex_t cmm_swap_table_mutex; /**< For protecting swap_table in swap section*/
 	pthread_mutex_t cmm_cdk_screen_mutex; /**< To ensure that only one thread is writing to UI*/
 	pthread_mutex_t cmm_cc_stats_mutex;
+	pthread_mutex_t cmm_cell_table_mutex;
 }cmm_mutexes;
-/**
- * @struct compressed_page_t
- * @brief Data structure for storing a list of compressed pages allocate at heap.
- */
-struct compressed_page_t{
-	unsigned int page_id; /**< page_id of stored page*/
-	unsigned char* page_data; /**< pointer to compressed buffer */
-	unsigned int page_len;
-	struct compressed_page_t *next;
-};
-/**
- * @struct cell_t
- * @brief Data structure for cell. Stores a list of compressed pages using best
- * 			fit strategy. Standard cell size is 12 KB.
- */
-struct cell_t{
-	unsigned int available_size; /**< How much space is available in this cell (in bytes) ?*/
-	unsigned int stored_page_count; /**< Count of compressed pages stored */
-	unsigned int cell_id;/**< This cell needs an unique id too.*/
 
-	struct compressed_page_t *list_head; /**< Points to beginning of list storing compressed pages*/
-	struct compressed_page_t *list_end; /**< Points to end of list. Helpful in O(1) insertion for new nodes.*/
-
-	struct cell_t *next;
-};
 void *acp_cmm_main(void *args);
 #endif /* ACP_CMM_UTILS_H_ */

@@ -15,6 +15,7 @@
  * @brief Defines error codes
  */
 typedef enum {
+	ACP_OK,
     ACP_ERR_ACP_STATE_INIT = 2, /**< Error in initializing acp_state */
     ACP_ERR_NO_CONFIG_FILE,  /**<  Configuration file is missing */
     ACP_ERR_CONFIG_ABORT,  /**< Fatal error in accessing configuration file */
@@ -33,6 +34,7 @@ typedef enum {
     ACP_ERR_NO_SUCH_ELEMENT,
     ACP_ERR_LZO_INIT,
     ACP_ERR_LZO_INTERNAL,
+    ACP_ERR_NO_CELL,
     ACP_ERR_GENERIC /** Generic error: not sure what it is, but it's fishy anyway*/
 } error_codes_t;
 /**

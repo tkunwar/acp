@@ -5,11 +5,12 @@
  */
 #ifndef ACP_DTYPES_H_
 #define ACP_DTYPES_H_
-/**
- * @def ACP_OK
- * @brief Symbol meaning that a operation has completed sucessfully.
- */
-#define ACP_OK 0
+
+typedef unsigned short int _uint16;
+typedef unsigned int _uint32;
+typedef unsigned long int _uint64;
+
+
 /**
  * @enum ON_OFF
  * @brief Creates two symbols on and off having values 1 and 0 respectively.
