@@ -23,12 +23,12 @@ static void *gmm_mem_stats_collector(void *args);
 static void *gmm_swap_manager(void *args);
 static void *gmm_mem_manager(void *args);
 static int create_swap_file(const char *filename, unsigned int max_pages);
-void update_label(struct acp_global_labels *label, char *new_content);
-void print_page_table(struct page_table *head_ele);
-int page_memory_allocator(struct page_table **head_ele,
+static void update_label(struct acp_global_labels *label, char *new_content);
+static void print_page_table(struct page_table *head_ele);
+static int page_memory_allocator(struct page_table **head_ele,
 		struct page_table **last_ele, unsigned int *page_id_counter,
 		unsigned int *n_pages);
-void free_page_table(struct page_table *head_ele);
+static void free_page_table(struct page_table *head_ele);
 static bool is_swapping_needed();
 static struct page_table* find_oldest_page_in_mem_page_table(
 		struct page_table *head);
@@ -36,9 +36,9 @@ static int write_page_to_swap(struct swap_file_record_t *swap_record,
 		unsigned int *record_index);
 static int insert_page_in_swap_page_table(unsigned int page_id,
 		unsigned int record_index);
-void page_data_filler(char *page_data);
+static void page_data_filler(char *page_data);
 static int remove_page_from_page_table(struct page_table **node);
-void free_swap_page_table(struct swap_page_table_t *head_ele);
+static void free_swap_page_table(struct swap_page_table_t *head_ele);
 
 static void init_acp_gmm_state() {
 	//these two variables wont be modifed during program run
@@ -219,6 +219,7 @@ static void *gmm_mem_manager(void *args) {
 			break;
 		}
 		pthread_mutex_unlock(&gmm_mutexes.gmm_mem_page_table_mutex);
+
 		//now update stats
 		pthread_mutex_lock(&gmm_mutexes.gmm_mem_stats_mutex);
 		gmm_module_state.total_memory = gmm_module_state.total_memory
@@ -569,7 +570,7 @@ static int insert_page_in_swap_page_table(unsigned int page_id,
 	}
 	return ACP_OK;
 }
-void free_swap_page_table(struct swap_page_table_t *head_ele) {
+static void free_swap_page_table(struct swap_page_table_t *head_ele) {
 	struct swap_page_table_t *prev_node = head_ele, *cur_node = head_ele;
 	do {
 		prev_node = cur_node;
@@ -590,7 +591,7 @@ static void *gmm_mem_stats_collector(void *args) {
 			break;
 		}
 		//acquire lock before updating stats
-		pthread_mutex_lock(&gmm_mutexes.gmm_mem_page_table_mutex);
+		pthread_mutex_lock(&gmm_mutexes.gmm_mem_stats_mutex);
 
 		snprintf(msg, 256, "%12lu", gmm_module_state.total_memory);
 		update_label(&acp_state.agl_gmm_total_memory, msg);
@@ -601,7 +602,7 @@ static void *gmm_mem_stats_collector(void *args) {
 		snprintf(msg, 256, "%12u", gmm_module_state.pages_active);
 		update_label(&acp_state.agl_gmm_pages_active, msg);
 		//release lock
-		pthread_mutex_unlock(&gmm_mutexes.gmm_mem_page_table_mutex);
+		pthread_mutex_unlock(&gmm_mutexes.gmm_mem_stats_mutex);
 		sleep(acp_config.stats_refresh_rate);
 	}
 	sdebug("gmm_mem_stats_collector: shutting down");
@@ -662,7 +663,7 @@ static void *gmm_swap_stats_collector(void *args) {
  * 		many pages were actually allocated.
  * @return ACP_OK if succes else an error code.
  */
-int page_memory_allocator(struct page_table **head_ele,
+static int page_memory_allocator(struct page_table **head_ele,
 		struct page_table **last_ele, unsigned int *page_id_counter,
 		unsigned int *n_pages) {
 	struct page_table *node = NULL;
@@ -710,13 +711,13 @@ int page_memory_allocator(struct page_table **head_ele,
 
 	return ACP_OK;
 }
-void page_data_filler(char *page_data) {
+static void page_data_filler(char *page_data) {
 	int i;
 	for (i = 0; i < ACP_PAGE_SIZE; i++) {
 		page_data[i] = 'a';
 	}
 }
-void free_page_table(struct page_table *head_ele) {
+static void free_page_table(struct page_table *head_ele) {
 	struct page_table *prev_node = head_ele, *cur_node = head_ele;
 	do {
 		prev_node = cur_node;
@@ -727,7 +728,7 @@ void free_page_table(struct page_table *head_ele) {
 	//we have emptied page_table so set the pointer to null.
 	gmm_module_state.page_table = NULL;
 }
-void print_page_table(struct page_table *head_ele) {
+static void print_page_table(struct page_table *head_ele) {
 	struct page_table *node = head_ele;
 	if (!head_ele) {
 		serror("Got no first element");
@@ -737,7 +738,7 @@ void print_page_table(struct page_table *head_ele) {
 		var_debug("page_id: %u", node->page.page_id);
 	}
 }
-void update_label(struct acp_global_labels *label, char new_content[]) {
+static void update_label(struct acp_global_labels *label, char new_content[]) {
 	char *mesg[2];
 	curs_set(0);
 

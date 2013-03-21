@@ -21,6 +21,10 @@ struct swap_page_table_t{
 
 // warning : variables in this structure will be updated by threads so do not
 // modify the values directly
+/**
+ * @struct gmm_module_state_t
+ * @brief The state structure for acp gmm module.
+ */
 struct gmm_module_state_t {
 	//immutable structures
 	unsigned int swappiness_threshold_in_pages ; /**< No.of pages allocated when we start swapping. */

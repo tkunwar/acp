@@ -107,7 +107,7 @@ struct ACP_STATE {
     struct acp_global_labels agl_gmm_swap_max_size,agl_gmm_swap_used_space,
             agl_gmm_swap_pageout_timelag,agl_gmm_swap_pagein_timelag;
 
-    struct acp_global_labels agl_cmm_ucm_cur_memsize,agl_cmm_ucm_max_pages,agl_cmm_ucm_pages_used;
+    struct acp_global_labels agl_cmm_ucm_total_memsize,agl_cmm_ucm_total_pages,agl_cmm_ucm_pages_active;
     struct acp_global_labels agl_cmm_cc_cur_memsize,agl_cmm_cc_stored_pages,agl_cmm_cc_cells,agl_cmm_cc_pageout_timelag,
             agl_cmm_cc_pagein_timelag;
     struct acp_global_labels agl_cmm_swap_max_size,agl_cmm_swap_used_space,agl_cmm_swap_pages_used,

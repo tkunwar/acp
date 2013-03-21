@@ -508,16 +508,16 @@ static void draw_CMM_window() {
 
     x_displacement = strlen(lblText[0]) + 1;
     lblText[0] = "000000000000";
-    acp_state.agl_cmm_ucm_cur_memsize.lblptr = newCDKLabel(
+    acp_state.agl_cmm_ucm_total_memsize.lblptr = newCDKLabel(
                 acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
                 acp_state.CMM_win.cur_y + 1, (CDK_CSTRING2) lblText, 1, FALSE,
                 FALSE);
-    drawCDKLabel(acp_state.agl_cmm_ucm_cur_memsize.lblptr,
-                 ObjOf (acp_state.agl_cmm_ucm_cur_memsize.lblptr)->box);
-    acp_state.agl_cmm_ucm_cur_memsize.beg_x = acp_state.CMM_win.cur_x
+    drawCDKLabel(acp_state.agl_cmm_ucm_total_memsize.lblptr,
+                 ObjOf (acp_state.agl_cmm_ucm_total_memsize.lblptr)->box);
+    acp_state.agl_cmm_ucm_total_memsize.beg_x = acp_state.CMM_win.cur_x
             + x_displacement;
-    acp_state.agl_cmm_ucm_cur_memsize.beg_y = acp_state.CMM_win.cur_y + 1;
-    acp_state.agl_cmm_ucm_cur_memsize.win = acp_state.CMM_win;
+    acp_state.agl_cmm_ucm_total_memsize.beg_y = acp_state.CMM_win.cur_y + 1;
+    acp_state.agl_cmm_ucm_total_memsize.win = acp_state.CMM_win;
 
     lblText[0] = "Total pages:";
     lblTitle = newCDKLabel(acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x,
@@ -527,16 +527,16 @@ static void draw_CMM_window() {
 
     x_displacement = strlen(lblText[0]) + 1;
     lblText[0] = "000000000000";
-    acp_state.agl_cmm_ucm_max_pages.lblptr = newCDKLabel(
+    acp_state.agl_cmm_ucm_total_pages.lblptr = newCDKLabel(
                 acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
                 acp_state.CMM_win.cur_y + 2, (CDK_CSTRING2) lblText, 1, FALSE,
                 FALSE);
-    drawCDKLabel(acp_state.agl_cmm_ucm_max_pages.lblptr,
-                 ObjOf (acp_state.agl_cmm_ucm_max_pages.lblptr)->box);
-    acp_state.agl_cmm_ucm_max_pages.beg_x = acp_state.CMM_win.cur_x
+    drawCDKLabel(acp_state.agl_cmm_ucm_total_pages.lblptr,
+                 ObjOf (acp_state.agl_cmm_ucm_total_pages.lblptr)->box);
+    acp_state.agl_cmm_ucm_total_pages.beg_x = acp_state.CMM_win.cur_x
                                             + x_displacement;
-    acp_state.agl_cmm_ucm_max_pages.beg_y = acp_state.CMM_win.cur_y + 2;
-    acp_state.agl_cmm_ucm_max_pages.win = acp_state.CMM_win;
+    acp_state.agl_cmm_ucm_total_pages.beg_y = acp_state.CMM_win.cur_y + 2;
+    acp_state.agl_cmm_ucm_total_pages.win = acp_state.CMM_win;
 
     lblText[0] = "Pages active:";
     lblTitle = newCDKLabel(acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x,
@@ -546,16 +546,16 @@ static void draw_CMM_window() {
 
     x_displacement = strlen(lblText[0]) + 1;
     lblText[0] = "000000000000";
-    acp_state.agl_cmm_ucm_pages_used.lblptr = newCDKLabel(
+    acp_state.agl_cmm_ucm_pages_active.lblptr = newCDKLabel(
                 acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x + x_displacement,
                 acp_state.CMM_win.cur_y + 3, (CDK_CSTRING2) lblText, 1, FALSE,
                 FALSE);
-    drawCDKLabel(acp_state.agl_cmm_ucm_pages_used.lblptr,
-                 ObjOf (acp_state.agl_cmm_ucm_pages_used.lblptr)->box);
-    acp_state.agl_cmm_ucm_pages_used.beg_x = acp_state.CMM_win.cur_x
+    drawCDKLabel(acp_state.agl_cmm_ucm_pages_active.lblptr,
+                 ObjOf (acp_state.agl_cmm_ucm_pages_active.lblptr)->box);
+    acp_state.agl_cmm_ucm_pages_active.beg_x = acp_state.CMM_win.cur_x
             + x_displacement;
-    acp_state.agl_cmm_ucm_pages_used.beg_y = acp_state.CMM_win.cur_y + 3;
-    acp_state.agl_cmm_ucm_pages_used.win = acp_state.CMM_win;
+    acp_state.agl_cmm_ucm_pages_active.beg_y = acp_state.CMM_win.cur_y + 3;
+    acp_state.agl_cmm_ucm_pages_active.win = acp_state.CMM_win;
 
     //compressed cache section
     lblText[0] = "</U>Compressed Cache";

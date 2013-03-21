@@ -87,7 +87,8 @@ void process_user_response() {
 			break;
 		default:
 			//write to the console window for now
-			var_debug("key pressed: %c", ch);
+			var_debug("key pressed: %c", ch)
+			;
 			break;
 		}
 	}
@@ -110,7 +111,8 @@ void acp_shutdown() {
 	//other stuff related to cleanup but it's a normal cleanup
 	//signal that we are shutting down
 	acp_state.shutdown_in_progress = true;
-	var_debug("Parent sleeping for %d seconds to let child threads finish.",PARENT_WAIT_FOR_CHILD_THREADS);
+	var_debug("Parent sleeping for %d seconds to let child threads finish.",
+			PARENT_WAIT_FOR_CHILD_THREADS);
 	//wait for child threads
 	sleep(PARENT_WAIT_FOR_CHILD_THREADS);
 	//shut down GUI
@@ -126,6 +128,10 @@ void acp_shutdown() {
 		fprintf(stderr, "\nError in collecting thread: gmm_main");
 		exit(EXIT_FAILURE);
 	}
+	if (pthread_join(acp_state.cmm_main_thread, NULL ) != 0) {
+		fprintf(stderr, "\nError in collecting thread: cmm_main");
+		exit(EXIT_FAILURE);
+	}
 //	if (pthread_join(acp_state.cmm_main_thread,NULL)!=0){
 //			fprintf(stderr,"\nError in collecting thread: cmm_main");
 //			exit(EXIT_FAILURE);
@@ -133,7 +139,7 @@ void acp_shutdown() {
 	fclose(acp_state.log_ptr);
 	sigemptyset(&sigact.sa_mask);
 //	exit(EXIT_SUCCESS);
-	ExitProgram (EXIT_SUCCESS);
+	ExitProgram(EXIT_SUCCESS);
 }
 /**
  * @brief Intialize our signal handler
@@ -195,10 +201,10 @@ static void signal_handler(int sig) {
 	// Attempt to perform cleanup_after_failure when we have SIGINT,SIGKILL and SIGQUIT
 	// else give up
 //	if ((sig == SIGINT) || (sig == SIGQUIT) || (sig == SIGKILL)) {
-		sdebug("Prepairing to exit gracefully..");
-		acp_state.shutdown_in_progress = true;
-		//wait while cleanup_after_failure is finished
-		//a mutex lock would have been more efficient
+	sdebug("Prepairing to exit gracefully..");
+	acp_state.shutdown_in_progress = true;
+	//wait while cleanup_after_failure is finished
+	//a mutex lock would have been more efficient
 //		while(acp_state.shutdown_completed==false){
 //			sleep(1);
 //		}
@@ -263,8 +269,14 @@ int start_main_worker_threads() {
 	//create main acp_gmm thread
 	if (pthread_create(&acp_state.gmm_main_thread, NULL, acp_gmm_main, NULL )
 			!= 0) {
-		serror("\nThread1 creation failed ");
+		serror("\ngmm_main_thread creation failed ");
 		return ACP_ERR_THREAD_INIT;
 	}
+	if (pthread_create(&acp_state.cmm_main_thread, NULL, acp_cmm_main, NULL )
+			!= 0) {
+		serror("\ncmm_main_thread creation failed ");
+		return ACP_ERR_THREAD_INIT;
+	}
+
 	return ACP_OK;
 }
