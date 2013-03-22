@@ -101,6 +101,9 @@ void *acp_cmm_main(void *args) {
 	cmm_module_state.max_page_limit = (cmm_module_state.max_mem_limit)
 			/ (sizeof(struct page_table));
 
+	sdebug("set max_page_limit to 500");
+		cmm_module_state.max_page_limit = 500;
+
 	// this is when we should start caching pages. whether caching is needed or not
 	// will be decided based on this parameter.
 	cmm_module_state.cc_caching_threshold_in_pages =
@@ -186,16 +189,13 @@ static void *cmm_mem_manager(void *args) {
 		}
 		//fir testing break out when we have already allocated 200 pages
 		// that should be enough for us
-		if (cmm_module_state.total_pages >= 200) {
-			break;
-		}
+		if (cmm_module_state.total_pages >= cmm_module_state.max_page_limit) {
+				sleep(1);
+				continue;
+//					break;
+				}
 		// when we already have 100 pages active then slow down and let
 		// cache manager to cache a few pages.
-		if (cmm_module_state.pages_active >= 100) {
-			//			break;
-			sleep(1);
-			continue;
-		}
 		/*
 		 * if somehow pages could nt be swapped out and we have used our
 		 * max buff limit fully. then we sleep so that swap routine gets some time
@@ -413,12 +413,13 @@ static void *cmm_cc_manager(void *args) {
 static bool is_caching_needed() {
 	bool caching_needed = false;
 	pthread_mutex_lock(&cmm_mutexes.cmm_cc_stats_mutex);
+	if (cmm_module_state.pages_active
+				>= cmm_module_state.cc_caching_threshold_in_pages) {
+			caching_needed = true;
+		}
 //	if (cmm_module_state.pages_active >= cmm_module_state.caching_threshold_in_pages){
 //		caching_needed = true;
 //	}
-	if (cmm_module_state.pages_active >= 70) {
-		caching_needed = true;
-	}
 	pthread_mutex_unlock(&cmm_mutexes.cmm_cc_stats_mutex);
 	return caching_needed;
 }
@@ -718,7 +719,7 @@ static int store_page_in_cc(struct compressed_page_t *cpage) {
 		// initial case
 		target_cell = allocate_new_cell();
 //		var_debug("new cell: %u",target_cell->cell_id);
-		var_debug("will cache page: %u in cell: %u",cpage->page_id,target_cell->cell_id);
+//		var_debug("will cache page: %u in cell: %u",cpage->page_id,target_cell->cell_id);
 		save_page_to_cell(target_cell, cpage);
 
 		cmm_module_state.cell_table = cmm_module_state.cell_table_last_ele =
@@ -748,7 +749,7 @@ static int store_page_in_cc(struct compressed_page_t *cpage) {
 				return ACP_ERR_NO_CELL;
 			}
 //			var_debug("Will store page [%u] with req_len [%d] in cell: %u",cpage->page_id,(n),target_cell->cell_id);
-			var_debug("will cache page: %u in cell: %u",cpage->page_id,target_cell->cell_id);
+//			var_debug("will cache page: %u in cell: %u",cpage->page_id,target_cell->cell_id);
 			save_page_to_cell(target_cell, cpage);
 			//form the list
 			cmm_module_state.cell_table_last_ele->next = target_cell;
@@ -757,7 +758,7 @@ static int store_page_in_cc(struct compressed_page_t *cpage) {
 			return ACP_OK;
 		}
 //		var_debug("Will store page [%u] with req_len [%d] in cell: %u",cpage->page_id,(n),target_cell->cell_id);
-		var_debug("will cache page: %u in cell: %u",cpage->page_id,target_cell->cell_id);
+//		var_debug("will cache page: %u in cell: %u",cpage->page_id,target_cell->cell_id);
 		save_page_to_cell(target_cell, cpage);
 	}
 	return ACP_OK;
