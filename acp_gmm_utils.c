@@ -102,6 +102,9 @@ void *acp_gmm_main(void *args) {
 	gmm_module_state.max_swap_pages = gmm_module_state.max_swap_size
 			/ (sizeof(struct swap_file_record_t));
 
+	sdebug("For testing using diferent data set:");
+	sdebug("set max_page_limit to 500");
+	gmm_module_state.max_page_limit = 500;
 	//when do we start swapping
 	gmm_module_state.swappiness_threshold_in_pages =
 			(gmm_module_state.max_page_limit)
@@ -116,6 +119,8 @@ void *acp_gmm_main(void *args) {
 //	gmm_module_state.max_page_limit = 100;
 	var_debug("stats_ref_rate: %d log: %s", acp_config.stats_refresh_rate,
 			acp_config.log_filename);
+
+
 //	while(1){
 //
 //	}
@@ -192,14 +197,15 @@ static void *gmm_mem_manager(void *args) {
 		}
 		//fir testing break out when we have already allocated 200 pages
 		// that should be enough for us
-		if (gmm_module_state.total_pages >= 200) {
-			break;
-		}
-		if (gmm_module_state.pages_active >= 100) {
-//			break;
+		if (gmm_module_state.total_pages >= gmm_module_state.max_page_limit) {
 			sleep(1);
 			continue;
+//			break;
 		}
+//		if (gmm_module_state.pages_active >= 100) {
+//			sleep(1);
+//			continue;
+//		}
 		/*
 		 * if somehow pages could nt be swapped out and we have used our
 		 * max buff limit fully. then we sleep so that swap routine gets some time
@@ -285,13 +291,13 @@ static void *gmm_swap_manager(void *args) {
 			record.valid_record = true;
 			if (memcpy(record.record_data, oldest_page->page.page_data,
 					ACP_PAGE_SIZE) == NULL ) {
-				var_error("Problem in copyiing page [%u] from mem_page_table",
+				var_error("Problem in copying page [%u] from mem_page_table",
 						oldest_page->page.page_id);
 				//sleep for a while and then continue up
 				sleep(1);
 				continue;
 			}
-			var_debug("gmm_swap_manager: record_index: %u", swap_record_index);
+//			var_debug("gmm_swap_manager: record_index: %u", swap_record_index);
 			// 4. write this page to swap_file
 			t1 = t2 = 0;
 			t1 = gettime_in_nsecs();
@@ -311,8 +317,8 @@ static void *gmm_swap_manager(void *args) {
 
 			gmm_module_state.used_swap_space = gmm_module_state.used_swap_space
 					+ sizeof(struct swap_file_record_t);
-			var_debug("pot: %lu uss: %lu", gmm_module_state.page_out_timelag,
-					gmm_module_state.used_swap_space);
+//			var_debug("pot: %lu uss: %lu", gmm_module_state.page_out_timelag,
+//					gmm_module_state.used_swap_space);
 			pthread_mutex_unlock(&gmm_mutexes.gmm_swap_stats_mutex);
 
 //			var_debug("Adding page [%u] to swap_table",
@@ -341,8 +347,7 @@ static void *gmm_swap_manager(void *args) {
 		}else{
 			// if swapping not needed sleep for 1 second and then check if swapping
 			// is needed again
-			sdebug("gmm_swap_manager: swapping not needed.");
-			sleep(1);
+			usleep(1000);
 		}
 	}
 
@@ -362,13 +367,13 @@ static void *gmm_swap_manager(void *args) {
 static bool is_swapping_needed() {
 	bool swapping_needed = false;
 	pthread_mutex_lock(&gmm_mutexes.gmm_mem_stats_mutex);
-//	if (gmm_module_state.pages_active
-//			>= gmm_module_state.swappiness_threshold_in_pages) {
-//		swapping_needed = true;
-//	}
-	if (gmm_module_state.pages_active >= 70) {
+	if (gmm_module_state.pages_active
+			>= gmm_module_state.swappiness_threshold_in_pages) {
 		swapping_needed = true;
 	}
+//	if (gmm_module_state.pages_active >= 70) {
+//		swapping_needed = true;
+//	}
 	pthread_mutex_unlock(&gmm_mutexes.gmm_mem_stats_mutex);
 	return swapping_needed;
 }
@@ -433,8 +438,15 @@ static int write_page_to_swap(struct swap_file_record_t *swap_record,
 		return ACP_ERR_FILE_IO;
 	}
 
-	*record_index = *record_index % gmm_module_state.max_swap_pages;
+//	*record_index = *record_index % gmm_module_state.max_swap_pages;
 	while (*record_index < gmm_module_state.max_swap_pages) {
+		if ((lseek(fd, (*record_index) * sizeof(struct swap_file_record_t),
+							SEEK_SET)) == -1) {
+						var_error("Failed to seek write pointer in %s", GMM_SWAP_FILE);
+						close(fd);
+						return ACP_ERR_FILE_IO;
+					}
+
 		if ((read(fd, (struct swap_file_record_t*) &tmp_record,
 				sizeof(struct swap_file_record_t)))
 				!= sizeof(struct swap_file_record_t)) {
@@ -444,7 +456,7 @@ static int write_page_to_swap(struct swap_file_record_t *swap_record,
 			return ACP_ERR_FILE_IO;
 		}
 		if (tmp_record.valid_record == false) {
-			var_debug("Will write at index: %u", *record_index);
+//			var_debug("Will write at index: %u", *record_index);
 			//ensure write pointer is at correct position
 			if ((lseek(fd, (*record_index) * sizeof(struct swap_file_record_t),
 					SEEK_SET)) == -1) {
@@ -457,14 +469,11 @@ static int write_page_to_swap(struct swap_file_record_t *swap_record,
 				var_error("Could not write bytes into %s .", GMM_SWAP_FILE);
 				close(fd);
 				return ACP_ERR_FILE_IO;
-			} else {
-				var_debug("swapped out page: %d", (*swap_record).page_id);
-				break;
 			}
 			*record_index = *record_index + 1;
 			break;
 		}
-		*record_index = *record_index + 1;
+//		*record_index = *record_index + 1;
 	}
 
 	fdatasync(fd);
@@ -518,8 +527,8 @@ static int remove_page_from_page_table(struct page_table **node) {
 		sdebug("mem_page_table is empty !!");
 		return ACP_ERR_MEM_FAULT;
 	}
-	var_debug("Removing [%u] next [%u]",to_be_deleted->page.page_id,((*node)->next)->page.page_id);
-	var_debug("Trying to remove page %u", (*node)->page.page_id);
+//	var_debug("Removing [%u] next [%u]",to_be_deleted->page.page_id,((*node)->next)->page.page_id);
+//	var_debug("Trying to remove page %u", (*node)->page.page_id);
 	if (!*node) {
 		serror("Trying to delete a NULL page from page_table");
 		return ACP_ERR_MEM_FAULT;
