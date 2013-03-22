@@ -85,7 +85,7 @@ typedef enum{
 struct page_t{
 	unsigned int page_id; /**< The page id*/
 	bool dirty; /**< Has the page been modified ?*/
-	char page_data[ACP_PAGE_SIZE]; /**< page data of size 4 KB */
+	unsigned char page_data[ACP_PAGE_SIZE]; /**< page data of size 4 KB */
 	storage_loc_t page_cur_loc; /**< Where is this page currently located ?*/
 	unsigned int LAT;
 };

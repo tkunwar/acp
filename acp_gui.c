@@ -603,7 +603,7 @@ static void draw_CMM_window() {
     acp_state.agl_cmm_cc_stored_pages.beg_y = acp_state.CMM_win.cur_y + 2;
     acp_state.agl_cmm_cc_stored_pages.win = acp_state.CMM_win;
 
-    lblText[0] = "CC cells:";
+    lblText[0] = "Cells active:";
     lblTitle = newCDKLabel(acp_state.CMM_win.cdksptr, acp_state.CMM_win.cur_x,
                            acp_state.CMM_win.cur_y + 3, (CDK_CSTRING2) lblText, 1, FALSE,
                            FALSE);

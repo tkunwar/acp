@@ -75,18 +75,23 @@ struct cmm_module_state_t {
 
 	struct swap_page_table_t *swap_table;
 	struct swap_page_table_t *swap_table_last_ele;
-	unsigned long int page_out_timelag;
-	unsigned long int used_swap_space;
 
-	unsigned int caching_threshold_in_pages; /**< When do we begin caching?*/
-	unsigned long int max_caching_size; /**< This is the max. limit of memory that we will
+	//variables related to stats in cc
+	unsigned long int cc_page_out_timelag;
+	unsigned long int cc_page_in_timelag;
+	unsigned long int cc_current_size;
+	unsigned int cc_cells_active;
+	unsigned int cc_current_stored_pages;
+
+	unsigned int cc_caching_threshold_in_pages; /**< When do we begin caching?*/
+	unsigned long int cc_max_caching_size; /**< This is the max. limit of memory that we will
 	 	 	 	 	 	 	 	 	 use for caching the pages in cc. This parameter is
 	 	 	 	 	 	 	 	 	 specified in bytes.*/
-	unsigned int cell_id_counter;
+	unsigned int cc_cell_id_counter;
 	struct cell_t *cell_table; /**< List of cells maintained for storing pages in compressed pages.*/
 	struct cell_t *cell_table_last_ele; /**< Points to last element stored in cell_table.*/
-	unsigned int max_cell_count; /**< Max. no. of cells that can be allocated.*/
-	unsigned int cells_active;
+	unsigned int cc_max_cell_count; /**< Max. no. of cells that can be allocated.*/
+
 } cmm_module_state;
 
 struct cmm_mutexes_t{

@@ -20,23 +20,26 @@ static int page_memory_allocator(struct page_table **head_ele,
 static void update_label(struct acp_global_labels *label, char new_content[]);
 //static int decompress_page(struct compressed_page_t *cpage,
 //		struct page_t *out_page);
-static void page_data_filler(char *page_data);
+static void page_data_filler(unsigned char *page_data);
 static bool is_caching_needed();
 static struct page_table* find_oldest_page_in_mem_page_table(
 		struct page_table *head);
 static int compress_page(const struct page_t *src_page,
-		struct compressed_page_t *out_page);
+		struct compressed_page_t **out_page);
 static int decompress_page(const struct compressed_page_t *cpage,
-		struct page_t *out_page) ;
+		struct page_t *out_page);
+static int remove_page_from_page_table(struct page_table **node);
 
 static int store_page_in_cc(struct compressed_page_t *cpage);
 static struct cell_t *allocate_new_cell();
-static void save_page_to_cell(struct cell_t *target_cell,struct compressed_page_t *cpage);
-static unsigned int find_next_pageid_from_cell(const unsigned char *cell_data, int *index);
-static unsigned int find_next_pagelen_from_cell(const unsigned char *cell_data, int *index);
+static void save_page_to_cell(struct cell_t *target_cell,
+		struct compressed_page_t *cpage);
+static unsigned int find_next_pageid_from_cell(const unsigned char *cell_data,
+		int *index);
+static unsigned int find_next_pagelen_from_cell(const unsigned char *cell_data,
+		int *index);
 static struct cell_t * find_smallest_cell_from_celltable(_uint16 cpage_len);
-static void free_cell_table(struct cell_t *head_ele) ;
-
+static void free_cell_table(struct cell_t *head_ele);
 
 static void init_acp_cmm_state() {
 	//these two variables wont be modifed during program run
@@ -72,13 +75,17 @@ static void init_acp_cmm_state() {
 	cmm_module_state.cmm_page_id_counter = 1;
 	cmm_module_state.swap_table = NULL;
 	cmm_module_state.swap_table_last_ele = NULL;
-	cmm_module_state.used_swap_space = 0;
-	cmm_module_state.page_out_timelag = 0;
-	cmm_module_state.max_caching_size = 0;
-	cmm_module_state.caching_threshold_in_pages = 0;
-	cmm_module_state.cell_id_counter = 1;
+	cmm_module_state.cc_current_size = 0;
+	cmm_module_state.cc_page_out_timelag = 0;
+	cmm_module_state.cc_max_caching_size = 0;
+	cmm_module_state.cc_caching_threshold_in_pages = 0;
+	cmm_module_state.cc_cell_id_counter = 1;
 	cmm_module_state.cell_table = cmm_module_state.cell_table_last_ele = NULL;
-	cmm_module_state.cells_active = 0;
+	cmm_module_state.cc_cells_active = 0;
+
+	cmm_module_state.cc_page_in_timelag = 0;
+	cmm_module_state.cc_current_size = 0;
+	cmm_module_state.cc_current_stored_pages = 0;
 }
 /**
  * @brief the main routine for acp_cmm module.
@@ -93,7 +100,7 @@ void *acp_cmm_main(void *args) {
 
 	// this is when we should start caching pages. whether caching is needed or not
 	// will be decided based on this parameter.
-	cmm_module_state.caching_threshold_in_pages =
+	cmm_module_state.cc_caching_threshold_in_pages =
 			(cmm_module_state.max_page_limit)
 					* ((((float) acp_config.swappiness)) / 100); //swappiness is %age
 
@@ -104,14 +111,20 @@ void *acp_cmm_main(void *args) {
 	 * page allocation will be faster in this case. space for caching will be slower
 	 * soon eonugh for cc engine to realize it and take action accordingly.
 	 */
-	cmm_module_state.max_caching_size = (cmm_module_state.max_mem_limit)
+	cmm_module_state.cc_max_caching_size = (cmm_module_state.max_mem_limit)
 			* ((((float) (95 - acp_config.swappiness))) / 100);
 
-	var_debug(
-			"cmm_main: max_mem:[%lu] max_page_limit: [%u] caching_th: [%u] max_caching_size: [%lu]",
-			cmm_module_state.max_mem_limit, cmm_module_state.max_page_limit,
-			cmm_module_state.caching_threshold_in_pages,
-			cmm_module_state.max_caching_size);
+	cmm_module_state.cc_max_cell_count = cmm_module_state.cc_max_caching_size
+			/ (sizeof(struct cell_t));
+	var_debug("cmm_main: max_mem:[%lu] max_page_limit: [%u] ",
+			cmm_module_state.max_mem_limit, cmm_module_state.max_page_limit);
+
+	var_debug("cmm_main: caching_th: [%u] max_caching_size: [%lu]",
+			cmm_module_state.cc_caching_threshold_in_pages,
+			cmm_module_state.cc_max_caching_size);
+	var_debug("cmm_main: max_cell_count: %u",
+			cmm_module_state.cc_max_cell_count);
+
 	//create threads
 	if ((pthread_create(&cmm_module_state.cmm_mem_manager, NULL,
 			cmm_mem_manager, NULL )) != 0) {
@@ -271,6 +284,7 @@ static void *cmm_cc_manager(void *args) {
 	 *	if needed will be performed by cc module.
 	 */
 	struct page_table *oldest_page = NULL;
+//	int i=0;
 	struct compressed_page_t *page_in_compressed_form = NULL;
 	unsigned long int t1, t2;
 	while (1) {
@@ -280,6 +294,7 @@ static void *cmm_cc_manager(void *args) {
 		}
 		// 1. check if  caching is needed
 		if (is_caching_needed() == true) {
+//			sdebug("cmm_cc_manager: Caching needed.");
 			// 2. find oldest page to cache
 			oldest_page = find_oldest_page_in_mem_page_table(
 					cmm_module_state.page_table);
@@ -290,9 +305,11 @@ static void *cmm_cc_manager(void *args) {
 				sleep(1);
 				continue;
 			}
+//			var_debug("cmm_cc_manager: Will cache: %u ",oldest_page->page.page_id);
+//			sleep(1);
 			//3. lets compress oldest page.
 			t1 = gettime_in_nsecs();
-			if (compress_page(&oldest_page->page, page_in_compressed_form)
+			if (compress_page(&oldest_page->page, &page_in_compressed_form)
 					!= ACP_OK) {
 				var_error("cmm_cc_manager: Failed to compressed page %u",
 						oldest_page->page.page_id);
@@ -304,30 +321,63 @@ static void *cmm_cc_manager(void *args) {
 				continue;
 			}
 			t2 = gettime_in_nsecs();
-			//t2-t1 is what we took for page compression.
+			//t2-t1 is what we took for page compression and will be considered
+			// as pageout timelag for cc unit.
+			pthread_mutex_lock(&cmm_mutexes.cmm_cc_stats_mutex);
+			cmm_module_state.cc_page_out_timelag =
+					cmm_module_state.cc_page_out_timelag + (t2 - t1);
+			pthread_mutex_unlock(&cmm_mutexes.cmm_cc_stats_mutex);
 
 			// since we are not maintaining any global page table other than
 			// page_table used by mem_manager we will not store information about
 			// location of this page. We are not doing this even in gmm module.
 			// this means we can not have lookups or faster look up for a page.
 			// All our processing is one way only.
-
 			// now lets store this page in cache
 
-			//update status
+			if (store_page_in_cc(page_in_compressed_form) != ACP_OK) {
+				sdebug("Something went wrong");
+				//something went wrong
+				free(page_in_compressed_form);
+				//since we could not cache this page, most probably because
+				// cc was full and even after that swap was full. we will not
+				// send signal to cmm_mem_manager to cleanup this page.
+				// we simply go up. This situation is not good, probably we should
+				// break out.
+				var_error("cmm_cc_manager: Could not cache page: %u",
+						oldest_page->page.page_id);
+//				continue;
+				// however once this happens other threads/routines in CC layer should
+				//terminate too.
+				break;
+			}
+			// operations in cc is transparent to this routine. Stats will be
+			// updated where applicable.
 
 			//send signal to clear this page from page_table
+			if (remove_page_from_page_table(&oldest_page) != ACP_OK) {
+				if (cmm_module_state.page_table == NULL ) {
+					sdebug("Probably cmm_mem_manager has already exited !");
+				} else {
+					var_error("Failed to delete page [%u] from page_table",
+							oldest_page->page.page_id);
+				}
+				sleep(1);
+			}
 
 			//clear page_in_compressed_form as its data will be copied to cell's
 			// data field.
 			free(page_in_compressed_form);
+			usleep(1000);
 		} else {
-			sdebug("cmm_cc_manager: caching not needed.");
-			sleep(1);
+//			sdebug("cmm_cc_manager: caching not needed.");
+			usleep(1000);
 		}
 	}
-
 	sdebug("cmm_cc_manager: shutting down");
+	//cleanup cache tables
+	sdebug("cmm_cc_manager: cleanup cell cache table..");
+	free_cell_table(cmm_module_state.cell_table);
 
 	pthread_exit(NULL );
 
@@ -361,6 +411,40 @@ static struct page_table* find_oldest_page_in_mem_page_table(
 	return NULL ;
 }
 static void *cmm_cc_stats_collector(void *args) {
+	/*
+	 * we will update current_cc_size,stored_pages,cc_cells_active and pageout_timelag
+	 * all in one go.
+	 */
+	char msg[256];
+	while (1) {
+		if (acp_state.shutdown_in_progress == true) {
+			//time to clean up
+			break;
+		}
+		//acquire lock before updating stats
+		pthread_mutex_lock(&cmm_mutexes.cmm_cc_stats_mutex);
+
+		snprintf(msg, 256, "%12lu", cmm_module_state.cc_current_size);
+		update_label(&acp_state.agl_cmm_cc_cur_memsize, msg);
+
+		snprintf(msg, 256, "%12u", cmm_module_state.cc_current_stored_pages);
+		update_label(&acp_state.agl_cmm_cc_stored_pages, msg);
+
+		snprintf(msg, 256, "%12u", cmm_module_state.cc_cells_active);
+		update_label(&acp_state.agl_cmm_cc_cells, msg);
+
+		snprintf(msg, 256, "%12u", cmm_module_state.cc_page_out_timelag);
+		update_label(&acp_state.agl_cmm_cc_pageout_timelag, msg);
+
+		// we are updating pagein timelag
+//		snprintf(msg, 256, "%12u", cmm_module_state.cc_page_in_timelag);
+//		update_label(&acp_state.agl_cmm_cc_pagein_timelag, msg);
+
+		//release lock
+		pthread_mutex_unlock(&cmm_mutexes.cmm_cc_stats_mutex);
+		sleep(acp_config.stats_refresh_rate);
+	}
+	sdebug("cmm_cc_stats_collector: shutting down");
 	pthread_exit(NULL );
 }
 /**
@@ -423,10 +507,14 @@ static int page_memory_allocator(struct page_table **head_ele,
 
 	return ACP_OK;
 }
-static void page_data_filler(char *page_data) {
+static void page_data_filler(unsigned char *page_data) {
 	int i;
+	int j = 48;
 	for (i = 0; i < ACP_PAGE_SIZE; i++) {
-		page_data[i] = 'a';
+		if (j == 122)
+			j = 48;
+		page_data[i] = (char) j;
+		j++;
 	}
 }
 static void free_page_table(struct page_table *head_ele) {
@@ -449,10 +537,11 @@ static void free_page_table(struct page_table *head_ele) {
 static HEAP_ALLOC(wrkmem, LZO1X_1_MEM_COMPRESS);
 
 static int compress_page(const struct page_t *src_page,
-		struct compressed_page_t *out_page) {
+		struct compressed_page_t **out_page) {
 	unsigned int in_len = 4096;
 	int lib_err;
 	unsigned int out_len = in_len + in_len / 16 + 64 + 3;
+//	var_debug("out_len before compression: %u", out_len);
 	unsigned char *tmp_out_buff = (unsigned char*) malloc(out_len);
 	if (!tmp_out_buff) {
 		serror("malloc: failed");
@@ -460,7 +549,7 @@ static int compress_page(const struct page_t *src_page,
 	}
 
 	//allocate memory to compressed page
-	out_page = (struct compressed_page_t *) malloc(
+	*out_page = (struct compressed_page_t *) malloc(
 			sizeof(struct compressed_page_t));
 	if (!tmp_out_buff) {
 		serror("malloc: failed");
@@ -481,8 +570,8 @@ static int compress_page(const struct page_t *src_page,
 	lib_err = lzo1x_1_compress(src_page->page_data, in_len, tmp_out_buff,
 			&out_len, wrkmem);
 	if (lib_err == LZO_E_OK) {
-		var_debug("compressed %lu bytes into %lu bytes",
-				(unsigned long ) in_len, (unsigned long ) out_len);
+//		var_debug("compressed [%u] %u bytes into %u bytes",
+//				src_page->page_id,in_len, out_len);
 	} else {
 		/* this should NEVER happen */
 		serror("Internal Compression error");
@@ -498,15 +587,15 @@ static int compress_page(const struct page_t *src_page,
 	 * now allocate actual out_len bytes of memory to out and copy the
 	 * tmp_out_buff contents to it.
 	 */
-	out_page->page_data = (unsigned char *) malloc(out_len);
+	(*out_page)->page_data = (unsigned char *) malloc(out_len);
 	if (!out_page) {
 		serror("malloc: failed");
 		return ACP_ERR_NO_MEM;
 	}
 
-	memcpy(out_page->page_data, tmp_out_buff, out_len);
-	out_page->page_id = src_page->page_id;
-	out_page->page_len = out_len;
+	memcpy((*out_page)->page_data, tmp_out_buff, out_len);
+	(*out_page)->page_id = src_page->page_id;
+	(*out_page)->page_len = out_len;
 //	out_page->next = NULL;
 
 	//now free tmp_out_buff
@@ -531,7 +620,7 @@ static int decompress_page(const struct compressed_page_t *cpage,
 		serror("Error initializing lzo lib.")
 		return ACP_ERR_LZO_INIT;
 	}
-	int new_len = 0, lib_err;
+	unsigned int new_len = 0, lib_err;
 	lib_err = lzo1x_decompress(cpage->page_data, cpage->page_len,
 			out_page->page_data, &new_len, NULL );
 	if (lib_err == LZO_E_OK && new_len == 4096) {
@@ -556,137 +645,186 @@ static void update_label(struct acp_global_labels *label, char new_content[]) {
 }
 
 // ////////////////////// CC_STORAGE_API ////////////////
-static int store_page_in_cc(struct compressed_page_t *cpage){
+static int store_page_in_cc(struct compressed_page_t *cpage) {
 	struct cell_t *target_cell = NULL;
-	if (!cmm_module_state.cell_table){
+	int n=cpage->page_len + 6;
+//	var_debug("to store cpage: %u", cpage->page_id);
+	if (!cmm_module_state.cell_table) {
 		// initial case
 		target_cell = allocate_new_cell();
-		save_page_to_cell(target_cell,cpage);
+//		var_debug("new cell: %u",target_cell->cell_id);
+		var_debug("will cache page: %u in cell: %u",cpage->page_id,target_cell->cell_id);
+		save_page_to_cell(target_cell, cpage);
 
-		cmm_module_state.cell_table = cmm_module_state.cell_table_last_ele = target_cell;
-		cmm_module_state.cell_table->next = cmm_module_state.cell_table_last_ele->next = NULL;
-	}else{
+		cmm_module_state.cell_table = cmm_module_state.cell_table_last_ele =
+				target_cell;
+		cmm_module_state.cell_table->next =
+				cmm_module_state.cell_table_last_ele->next = NULL;
+	} else {
 		// find the required cell with best fit strategy
 		target_cell = find_smallest_cell_from_celltable(cpage->page_len);
-		if (!target_cell){
+		if (target_cell){
+//			var_debug("cid: %u avail_size: %u page_count: %u",target_cell->cell_id,target_cell->available_size,target_cell->stored_page_count);
+		}
+
+		if (!target_cell) {
 			target_cell = allocate_new_cell();
-			if (!target_cell){
+//			var_debug("new cell: %u",target_cell->cell_id);
+//			var_debug("No space currently,new cell: %u",target_cell->cell_id);
+			if (!target_cell) {
 				// This is bad neither do we have a cell with enough space to
 				// accomodate this page nor can we allocate a new one.
 				// log an error and return
-				var_error("store_page_in_cc(): No cell to fit page: [%u], neither can allocate a new one.",cpage->page_id);
+				// TODO: Here we swap the page to disk. So basically the interface to
+				// swapping unit in cmm comes here.
+				var_error(
+						"store_page_in_cc(): No cell to fit page: [%u], neither can allocate a new one.",
+						cpage->page_id);
 				return ACP_ERR_NO_CELL;
 			}
-			save_page_to_cell(target_cell,cpage);
-
+//			var_debug("Will store page [%u] with req_len [%d] in cell: %u",cpage->page_id,(n),target_cell->cell_id);
+			var_debug("will cache page: %u in cell: %u",cpage->page_id,target_cell->cell_id);
+			save_page_to_cell(target_cell, cpage);
 			//form the list
 			cmm_module_state.cell_table_last_ele->next = target_cell;
 			cmm_module_state.cell_table_last_ele = target_cell;
 			cmm_module_state.cell_table_last_ele = NULL;
+			return ACP_OK;
 		}
+//		var_debug("Will store page [%u] with req_len [%d] in cell: %u",cpage->page_id,(n),target_cell->cell_id);
+		var_debug("will cache page: %u in cell: %u",cpage->page_id,target_cell->cell_id);
+		save_page_to_cell(target_cell, cpage);
 	}
 	return ACP_OK;
 }
-static struct cell_t *allocate_new_cell(){
+static struct cell_t *allocate_new_cell() {
 	struct cell_t *node = NULL;
-	if (cmm_module_state.cells_active >= cmm_module_state.max_cell_count){
+	if (cmm_module_state.cc_cells_active
+			>= cmm_module_state.cc_max_cell_count) {
 		serror("allocate_new_cell(): Max cell allocation limit reached.");
-		return NULL;
+		return NULL ;
 	}
 	node = (struct cell_t*) malloc(sizeof(struct cell_t));
-	if (!node){
-		return NULL;
+	if (!node) {
+		return NULL ;
 	}
 	node->available_size = 12288;
-	node->cell_id = cmm_module_state.cell_id_counter;
+	node->cell_id = cmm_module_state.cc_cell_id_counter;
 	// increment cell_id_counter
-	cmm_module_state.cell_id_counter = cmm_module_state.cell_id_counter + 1;
+	cmm_module_state.cc_cell_id_counter = cmm_module_state.cc_cell_id_counter
+			+ 1;
+
 	node->stored_page_count = 0;
 	node->next = NULL;
-	memset(node->data,0,12288);
+	memset(node->data, 0, 12288);
 
 	//also increment cell count
-	cmm_module_state.cells_active = cmm_module_state.cells_active + 1;
+	pthread_mutex_lock(&cmm_mutexes.cmm_cc_stats_mutex);
+	cmm_module_state.cc_cells_active = cmm_module_state.cc_cells_active + 1;
+	cmm_module_state.cc_current_size = cmm_module_state.cc_current_size
+			+ sizeof(struct cell_t);
+	pthread_mutex_unlock(&cmm_mutexes.cmm_cc_stats_mutex);
 	return node;
 }
 
-static void save_page_to_cell(struct cell_t *target_cell,struct compressed_page_t *cpage){
-	int index = 0;
+static void save_page_to_cell(struct cell_t *target_cell,
+		struct compressed_page_t *cpage) {
+	int page_data_index = 0;
 	int next_page_id = 0;
 	int next_page_len = 0;
 	unsigned char tmp_buff[4];
-
-	do{
-		next_page_id = find_next_pageid_from_cell(target_cell->data,&index);
-		if (next_page_id == 0){
+//	var_debug("in save_page_to_cell: [%u] page: [%u]",target_cell->cell_id,cpage->page_id);
+	do {
+		next_page_id = find_next_pageid_from_cell(target_cell->data, &page_data_index);
+		if (next_page_id == 0) {
 			break;
 		}
-		next_page_len = find_next_pagelen_from_cell(target_cell->data,&index);
+		next_page_len = find_next_pagelen_from_cell(target_cell->data, &page_data_index);
 		// move index len_no. of bytes
-		index = index + next_page_len;
-	}while(next_page_id);
-
+		page_data_index = page_data_index + next_page_len;
+	} while (next_page_id);
 	// so index is from where we will save the page.
 	//first save the page_id
-	memset(tmp_buff,0,4);
-	store32(tmp_buff,cpage->page_id);
-	memcpy((target_cell->data + index),tmp_buff,4 );
-	index = index + 4;
+	memset(tmp_buff, 0, 4);
+	store32(tmp_buff, cpage->page_id);
+	memcpy((target_cell->data + page_data_index), tmp_buff, 4);
+	page_data_index = page_data_index + 4;
 
 	//now save page_len
-	memset(tmp_buff,0,4);
-	store16(tmp_buff,cpage->page_len);
-	memcpy((target_cell->data + index),tmp_buff,2 );
-	index = index + 2;
+	memset(tmp_buff, 0, 4);
+	store16(tmp_buff, cpage->page_len);
+	memcpy((target_cell->data + page_data_index), tmp_buff, 2);
+	page_data_index = page_data_index + 2;
 
 	//now we save the page_data in compressed form
-	memcpy((target_cell->data + index),cpage->page_data,cpage->page_len);
-	index = index + cpage->page_len; //not needed as such
+	memcpy((target_cell->data + page_data_index), cpage->page_data, cpage->page_len);
+//	page_data_index = page_data_index + cpage->page_len; //not needed as such
 
 	//update stats for this cell
-	target_cell->available_size = target_cell->available_size - cpage->page_len - 4 -2; // 4 for page_id and 2 for page_len fields
+	target_cell->available_size = target_cell->available_size - cpage->page_len
+			- 4 - 2; // 4 for page_id and 2 for page_len fields
 	target_cell->stored_page_count = target_cell->stored_page_count + 1;
-}
-static unsigned int find_next_pageid_from_cell(const unsigned char *cell_data, int *index){
-	//page_id is of 4 bytes
-	unsigned int page_id=0;
-	unsigned char tmp_buff[4];
-	memcpy(tmp_buff,cell_data+(*index),4);
 
-	load32(tmp_buff,&page_id);
-	*index = *index+4; //advance to four positions next
+	//update the pages_cached flag
+	pthread_mutex_lock(&cmm_mutexes.cmm_cc_stats_mutex);
+	cmm_module_state.cc_current_stored_pages =
+			cmm_module_state.cc_current_stored_pages + 1;
+	pthread_mutex_unlock(&cmm_mutexes.cmm_cc_stats_mutex);
+}
+static unsigned int find_next_pageid_from_cell(const unsigned char *cell_data,
+		int *index) {
+	//page_id is of 4 bytes
+	unsigned int page_id = 0;
+	unsigned char tmp_buff[4];
+	memcpy(tmp_buff, cell_data + (*index), 4);
+
+	load32(tmp_buff, &page_id);
+	if (page_id){
+		*index = *index + 4; //advance to four positions next
+	}
 	return page_id;
 }
-static unsigned int find_next_pagelen_from_cell(const unsigned char *cell_data, int *index){
+static unsigned int find_next_pagelen_from_cell(const unsigned char *cell_data,
+		int *index) {
 	//page_len is of 2 bytes
-	unsigned int page_len=0;
+	_uint16 page_len = 0;
 	unsigned char tmp_buff[2];
-	memcpy(tmp_buff,cell_data+(*index),2);
+	memcpy(tmp_buff, cell_data + (*index), 2);
 
-	load16(tmp_buff,&page_len);
-	*index = *index+2; //advance to four positions next
+	load16(tmp_buff, &page_len);
+	if (page_len){
+		*index = *index + 2; //advance to four positions next
+	}
 	return page_len;
 }
 
-static struct cell_t * find_smallest_cell_from_celltable(_uint16 cpage_len){
+static struct cell_t * find_smallest_cell_from_celltable(_uint16 cpage_len) {
 	int required_len = cpage_len + 4 + 2;
-	struct cell_t *smallest_cell,*cur_cell = NULL;
-	for(cur_cell = cmm_module_state.cell_table;cur_cell!=NULL;cur_cell = cur_cell->next){
-		if ((cur_cell->available_size) > required_len){
-			if (!smallest_cell){
+	struct cell_t *smallest_cell=NULL, *cur_cell = NULL;
+	for (cur_cell = cmm_module_state.cell_table; cur_cell != NULL ; cur_cell =
+			cur_cell->next) {
+		if ((cur_cell->available_size) > required_len) {
+			if (!smallest_cell) {
 				smallest_cell = cur_cell;
 				continue;
 			}
-			if ((cur_cell ->available_size) < (smallest_cell->available_size)){
+			if ((cur_cell->available_size) < (smallest_cell->available_size)) {
 				smallest_cell = cur_cell;
 			}
 		}
 	}
+//	var_debug("smallest search: req len: %d avail: %u",required_len,smallest_cell->available_size);
 	return smallest_cell;
 }
 
 static void free_cell_table(struct cell_t *head_ele) {
 	struct cell_t *prev_node = head_ele, *cur_node = head_ele;
+//	pthread_mutex_lock(&cmm_mutexes.cmm_cell_table_mutex);
+	if (!head_ele){
+		cmm_module_state.page_table = NULL;
+		return ;
+	}
+
 	do {
 		prev_node = cur_node;
 		cur_node = cur_node->next;
@@ -694,4 +832,34 @@ static void free_cell_table(struct cell_t *head_ele) {
 	} while (cur_node);
 	//we have emptied page_table so set the pointer to null.
 	cmm_module_state.page_table = NULL;
+//	pthread_mutex_unlock(&cmm_mutexes.cmm_cell_table_mutex);
+}
+static int remove_page_from_page_table(struct page_table **node) {
+	/*
+	 * Though not an efficient way but since we know that oldest page
+	 * is the first one. So removing a page from page table always means
+	 * removing the first element.
+	 */
+	struct page_table *to_be_deleted = *node;
+	if (cmm_module_state.page_table == NULL ) {
+		sdebug("cmm_mem_page_table is empty !!");
+		return ACP_ERR_MEM_FAULT;
+	}
+//	var_debug("Removing [%u] next [%u]",to_be_deleted->page.page_id,((*node)->next)->page.page_id);
+//	var_debug("Trying to remove page %u", (*node)->page.page_id);
+	if (!*node) {
+		serror("Trying to delete a NULL page from page_table");
+		return ACP_ERR_MEM_FAULT;
+	}
+
+	pthread_mutex_lock(&cmm_mutexes.cmm_mem_page_table_mutex);
+	cmm_module_state.page_table = (*node)->next;
+	free(to_be_deleted);
+	pthread_mutex_unlock(&cmm_mutexes.cmm_mem_page_table_mutex);
+	//we just removed a page from page_table , decrement pages active count
+
+	pthread_mutex_lock(&cmm_mutexes.cmm_mem_stats_mutex);
+	cmm_module_state.pages_active = cmm_module_state.pages_active - 1;
+	pthread_mutex_unlock(&cmm_mutexes.cmm_mem_stats_mutex);
+	return ACP_OK;
 }

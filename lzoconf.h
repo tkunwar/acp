@@ -107,8 +107,8 @@ extern "C" {
  ************************************************************************/
 
 
-typedef unsigned long int lzo_uint;
-typedef long int lzo_int;
+typedef unsigned int lzo_uint;
+typedef int lzo_int;
 
 
 /* Integral types with 32 bits or more. */

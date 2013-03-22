@@ -36,7 +36,7 @@ static int write_page_to_swap(struct swap_file_record_t *swap_record,
 		unsigned int *record_index);
 static int insert_page_in_swap_page_table(unsigned int page_id,
 		unsigned int record_index);
-static void page_data_filler(char *page_data);
+static void page_data_filler(unsigned char *page_data);
 static int remove_page_from_page_table(struct page_table **node);
 static void free_swap_page_table(struct swap_page_table_t *head_ele);
 
@@ -711,7 +711,7 @@ static int page_memory_allocator(struct page_table **head_ele,
 
 	return ACP_OK;
 }
-static void page_data_filler(char *page_data) {
+static void page_data_filler(unsigned char *page_data) {
 	int i;
 	for (i = 0; i < ACP_PAGE_SIZE; i++) {
 		page_data[i] = 'a';

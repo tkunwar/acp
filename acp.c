@@ -132,10 +132,6 @@ void acp_shutdown() {
 		fprintf(stderr, "\nError in collecting thread: cmm_main");
 		exit(EXIT_FAILURE);
 	}
-//	if (pthread_join(acp_state.cmm_main_thread,NULL)!=0){
-//			fprintf(stderr,"\nError in collecting thread: cmm_main");
-//			exit(EXIT_FAILURE);
-//	}
 	fclose(acp_state.log_ptr);
 	sigemptyset(&sigact.sa_mask);
 //	exit(EXIT_SUCCESS);
@@ -230,6 +226,10 @@ void cleanup_after_failure(void) {
 		fprintf(stderr, "\nError in collecting thread: gmm_main");
 		exit(EXIT_FAILURE);
 	}
+	if (pthread_join(acp_state.cmm_main_thread, NULL ) != 0) {
+			fprintf(stderr, "\nError in collecting thread: cmm_main");
+			exit(EXIT_FAILURE);
+		}
 	if (acp_state.gui_ready == TRUE) {
 		close_ui();
 	} else {
