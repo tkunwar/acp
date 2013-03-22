@@ -6,6 +6,10 @@
 #include"acp.h"
 #include "acp_gmm_utils.h"
 #include "acp_cmm_utils.h"
+
+#define ACTIVATE_GMM_MODULE
+#define ACTIVATE_CMM_MODULE
+
 //========== routines declaration============
 void process_user_response();
 void acp_shutdown(); //close down program -- successful termination
@@ -124,14 +128,18 @@ void acp_shutdown() {
 		endCDK();
 	}
 	//collect master threads
+#ifdef ACTIVATE_GMM_MODULE
 	if (pthread_join(acp_state.gmm_main_thread, NULL ) != 0) {
 		fprintf(stderr, "\nError in collecting thread: gmm_main");
 		exit(EXIT_FAILURE);
 	}
+#endif
+#ifdef ACTIVATE_CMM_MODULE
 	if (pthread_join(acp_state.cmm_main_thread, NULL ) != 0) {
 		fprintf(stderr, "\nError in collecting thread: cmm_main");
 		exit(EXIT_FAILURE);
 	}
+#endif
 	fclose(acp_state.log_ptr);
 	sigemptyset(&sigact.sa_mask);
 //	exit(EXIT_SUCCESS);
@@ -222,14 +230,19 @@ void cleanup_after_failure(void) {
 	// No access curses UI, back to plain stderr
 	sigemptyset(&sigact.sa_mask);
 	//collect master threads
+#ifdef ACTIVATE_GMM_MODULE
 	if (pthread_join(acp_state.gmm_main_thread, NULL ) != 0) {
 		fprintf(stderr, "\nError in collecting thread: gmm_main");
 		exit(EXIT_FAILURE);
 	}
+#endif
+#ifdef ACTIVATE_CMM_MODULE
 	if (pthread_join(acp_state.cmm_main_thread, NULL ) != 0) {
 			fprintf(stderr, "\nError in collecting thread: cmm_main");
 			exit(EXIT_FAILURE);
 		}
+#endif
+
 	if (acp_state.gui_ready == TRUE) {
 		close_ui();
 	} else {
@@ -267,16 +280,19 @@ static void stack_trace() {
 
 int start_main_worker_threads() {
 	//create main acp_gmm thread
+#ifdef ACTIVATE_GMM_MODULE
 	if (pthread_create(&acp_state.gmm_main_thread, NULL, acp_gmm_main, NULL )
 			!= 0) {
 		serror("\ngmm_main_thread creation failed ");
 		return ACP_ERR_THREAD_INIT;
 	}
+#endif
+#ifdef ACTIVATE_CMM_MODULE
 	if (pthread_create(&acp_state.cmm_main_thread, NULL, acp_cmm_main, NULL )
 			!= 0) {
 		serror("\ncmm_main_thread creation failed ");
 		return ACP_ERR_THREAD_INIT;
 	}
-
+#endif
 	return ACP_OK;
 }
