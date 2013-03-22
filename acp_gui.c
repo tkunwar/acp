@@ -753,7 +753,7 @@ static void draw_console() {
                                       CDKparamValue(&acp_state.params, 'X', CENTER),
                                       CDKparamValue(&acp_state.params, 'Y', CENTER),
                                       CDKparamValue(&acp_state.params, 'H', acp_state.console_win.height),
-                                      CDKparamValue(&acp_state.params, 'W', acp_state.console_win.height),
+                                      CDKparamValue(&acp_state.params, 'W', acp_state.console_win.width),
                                       console_title, 100, CDKparamValue(&acp_state.params, 'N', TRUE),
                                       CDKparamValue(&acp_state.params, 'S', FALSE));
 

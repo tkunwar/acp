@@ -41,6 +41,9 @@ static unsigned int find_next_pagelen_from_cell(const unsigned char *cell_data,
 static struct cell_t * find_smallest_cell_from_celltable(_uint16 cpage_len);
 static void free_cell_table(struct cell_t *head_ele);
 
+/**
+ * @brief Initialize cmm module state.
+ */
 static void init_acp_cmm_state() {
 	//these two variables wont be modifed during program run
 	cmm_module_state.max_mem_limit = 0;
@@ -170,6 +173,10 @@ void *acp_cmm_main(void *args) {
 	//now exit
 	pthread_exit(NULL );
 }
+/**
+ * @brief Memory manager section of cmm module. Manages uncompressesd memory section.
+ * @param args Arguments if any passed to memory manager.
+ */
 static void *cmm_mem_manager(void *args) {
 	unsigned int n_pages = 1;
 	while (1) {
@@ -229,6 +236,10 @@ static void *cmm_mem_manager(void *args) {
 	pthread_exit(NULL );
 
 }
+/**
+ * @brief Stats collector thread of memory section of cmm module.
+ * @param args Arguments passed to mem stats collector thread.
+ */
 static void *cmm_mem_stats_collector(void *args) {
 	char msg[256];
 	while (1) {
@@ -254,6 +265,16 @@ static void *cmm_mem_stats_collector(void *args) {
 	sdebug("cmm_mem_stats_collector: shutting down");
 	pthread_exit(NULL );
 }
+/**
+ * @brief Compressed cache manager thread.
+ *
+ * cc_manager forms the core of cmm module. Not only that it caches pages which
+ * are swapped out, it also forms a transparent interface to underlying swapping
+ * layer. In case, memory cache is full then pages from CC are swapped out.
+ * This process however is fully transparent to memory manager. Memory manager only
+ * needs to throw out pages, CC will handle the rest.
+ * @param args Arguments passed to cc_manager.
+ */
 static void *cmm_cc_manager(void *args) {
 	/*
 	 * 1. check if caching needed.
@@ -382,6 +403,13 @@ static void *cmm_cc_manager(void *args) {
 	pthread_exit(NULL );
 
 }
+/**
+ * @brief Check if we need to cache pages from page table in uncompressed memory.
+ * 		This routine returns true when pages in page_table form swappiness_factor
+ * 		%age of entire memory available.
+ *
+ * 	Returns true/false indicating whether pages will be cached or not.
+ */
 static bool is_caching_needed() {
 	bool caching_needed = false;
 	pthread_mutex_lock(&cmm_mutexes.cmm_cc_stats_mutex);
@@ -410,6 +438,10 @@ static struct page_table* find_oldest_page_in_mem_page_table(
 	}
 	return NULL ;
 }
+/**
+ * @brief Stats collector thread routine for compressed cache.
+ * @param args Arguments passed to this thread.
+ */
 static void *cmm_cc_stats_collector(void *args) {
 	/*
 	 * we will update current_cc_size,stored_pages,cc_cells_active and pageout_timelag
@@ -507,6 +539,11 @@ static int page_memory_allocator(struct page_table **head_ele,
 
 	return ACP_OK;
 }
+/**
+ * @brief Fills up page_data portion of a newly allocated page with random
+ * 		characters.
+ * @param page_data The buffer of size 4096 which will be filled up.
+ */
 static void page_data_filler(unsigned char *page_data) {
 	int i;
 	int j = 48;
@@ -517,6 +554,10 @@ static void page_data_filler(unsigned char *page_data) {
 		j++;
 	}
 }
+/**
+ * @brief Clear memory held by global page table in uncompressed memory section.
+ * @param head_ele The pointer to the page_table
+ */
 static void free_page_table(struct page_table *head_ele) {
 	struct page_table *prev_node = head_ele, *cur_node = head_ele;
 	do {
@@ -527,6 +568,9 @@ static void free_page_table(struct page_table *head_ele) {
 	//we have emptied page_table so set the pointer to null.
 	cmm_module_state.page_table = NULL;
 }
+
+// /////////// Compression/Decompression routines (LZO) ////////////////
+
 /* Work-memory needed for compression. Allocate memory in units
  * of 'lzo_align_t' (instead of 'char') to make sure it is properly aligned.
  */
@@ -536,6 +580,14 @@ static void free_page_table(struct page_table *head_ele) {
 
 static HEAP_ALLOC(wrkmem, LZO1X_1_MEM_COMPRESS);
 
+/**
+ * @brief Compresses a page. And out_page points to the compressed page in memory.
+ * 		The memory for out_page is allocated dynamically. Therefore, out_page
+ * 		should be set to NULL.
+ * @param src_page  The source page which will be compressed.
+ * @param out_page The resultant page of compression.
+ * @return Returns ACP_OK if everything was ok or an appropriate error code.
+ */
 static int compress_page(const struct page_t *src_page,
 		struct compressed_page_t **out_page) {
 	unsigned int in_len = 4096;
@@ -632,6 +684,12 @@ static int decompress_page(const struct compressed_page_t *cpage,
 	out_page->page_id = cpage->page_id;
 	return ACP_OK;
 }
+/**
+ * @brief Updates a label which represents some information.This routine is
+ * 			thread safe.
+ * @param label The global lable in acp_state which needs to be updated.
+ * @param new_content The content which will appear on the designated label.
+ */
 static void update_label(struct acp_global_labels *label, char new_content[]) {
 	char *mesg[2];
 	curs_set(0);
@@ -645,6 +703,13 @@ static void update_label(struct acp_global_labels *label, char new_content[]) {
 }
 
 // ////////////////////// CC_STORAGE_API ////////////////
+/**
+ * @brief The central routine which forms the interface to CC API. This
+ * 			routine stores a compressed page as pointed by cpage in to the cell.
+ * 			Where the page is stored (in CC or in swap) is not visible to caller.
+ * @param cpage The compressed page.
+ * @return Returns a code indicating operation was SUCCESS or FAILURE.
+ */
 static int store_page_in_cc(struct compressed_page_t *cpage) {
 	struct cell_t *target_cell = NULL;
 	int n=cpage->page_len + 6;
@@ -697,6 +762,12 @@ static int store_page_in_cc(struct compressed_page_t *cpage) {
 	}
 	return ACP_OK;
 }
+/**
+ * @brief Allocates memory for a new cell if possible. The newly allocated
+ * 			cell is also provided with some initial attributes.
+ * @return If a new cell could be allocated then a non-null pointer or in case of
+ * 			falure a NULL.
+ */
 static struct cell_t *allocate_new_cell() {
 	struct cell_t *node = NULL;
 	if (cmm_module_state.cc_cells_active
@@ -726,7 +797,13 @@ static struct cell_t *allocate_new_cell() {
 	pthread_mutex_unlock(&cmm_mutexes.cmm_cc_stats_mutex);
 	return node;
 }
-
+/**
+ * @brief Save a page in the specified target cell.
+ * @param target_cell The cell where this page will be stored. Note that
+ * 			this routine does not try to check if this page can be stored in
+ * 			this cell or not. It's the caller's responsibility.
+ * @param cpage The compressed page which will be stored in the specified cell.
+ */
 static void save_page_to_cell(struct cell_t *target_cell,
 		struct compressed_page_t *cpage) {
 	int page_data_index = 0;
@@ -771,6 +848,15 @@ static void save_page_to_cell(struct cell_t *target_cell,
 			cmm_module_state.cc_current_stored_pages + 1;
 	pthread_mutex_unlock(&cmm_mutexes.cmm_cc_stats_mutex);
 }
+/**
+ * @brief Returns the next page from the data section of a cell.
+ * @param cell_data cell_data is 12KB of buffer where a compressed page is stored.
+ * 			Note that depdending upon compression , no. of pages stored in the
+ * 			cell may vary.
+ * @param index Last processed index, that we have seen so far in cell_data
+ * 			buffer under consideration.
+ * @return Return page_id or 0 if a page is not present
+ */
 static unsigned int find_next_pageid_from_cell(const unsigned char *cell_data,
 		int *index) {
 	//page_id is of 4 bytes
@@ -784,6 +870,13 @@ static unsigned int find_next_pageid_from_cell(const unsigned char *cell_data,
 	}
 	return page_id;
 }
+/**
+ * @brief Similar to find_next_pageid_from_cell() routine this routine finds the
+ * 			page_len of next page stored in the cell_data section of a cell.
+ * @param cell_data The cell_data buffer under consideration.
+ * @param index The last processed index
+ * @return page_len of the next page found in the data buffer of cell.
+ */
 static unsigned int find_next_pagelen_from_cell(const unsigned char *cell_data,
 		int *index) {
 	//page_len is of 2 bytes
@@ -798,6 +891,12 @@ static unsigned int find_next_pagelen_from_cell(const unsigned char *cell_data,
 	return page_len;
 }
 
+/**
+ * @brief Finds the smallest cell which has space just enough to store a page
+ * 			of length cpage_len.
+ * @param cpage_len Length of page which will be stored.
+ * @return A pointer to such a cell or NULL if no such cell.
+ */
 static struct cell_t * find_smallest_cell_from_celltable(_uint16 cpage_len) {
 	int required_len = cpage_len + 4 + 2;
 	struct cell_t *smallest_cell=NULL, *cur_cell = NULL;
@@ -816,7 +915,11 @@ static struct cell_t * find_smallest_cell_from_celltable(_uint16 cpage_len) {
 //	var_debug("smallest search: req len: %d avail: %u",required_len,smallest_cell->available_size);
 	return smallest_cell;
 }
-
+/**
+ * @brief Clear cell_table from memory. This includes cleaning of all cells and
+ * 			the data held by them.
+ * @param head_ele The front of the cell_table.
+ */
 static void free_cell_table(struct cell_t *head_ele) {
 	struct cell_t *prev_node = head_ele, *cur_node = head_ele;
 //	pthread_mutex_lock(&cmm_mutexes.cmm_cell_table_mutex);
@@ -834,6 +937,11 @@ static void free_cell_table(struct cell_t *head_ele) {
 	cmm_module_state.page_table = NULL;
 //	pthread_mutex_unlock(&cmm_mutexes.cmm_cell_table_mutex);
 }
+/**
+ * @brief Remove a page from page table in memory.
+ * @param node The page which will be removed from the page table.
+ * @return A status indicating whether operation succeded or failed.
+ */
 static int remove_page_from_page_table(struct page_table **node) {
 	/*
 	 * Though not an efficient way but since we know that oldest page
