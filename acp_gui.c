@@ -236,16 +236,16 @@ static void draw_menubar() {
                           (CDK_CSTRING2) lblText, 1, FALSE, FALSE);
     drawCDKLabel(lblHelp, ObjOf (lblHelp)->box);
 
-    lblText[0] = "<C></U>F3:Config";
-    acp_state.menubar_win.cur_x += 40;
-//		acp_state.menubar_win.cur_y +=5;
-    lblConfig = newCDKLabel(acp_state.menubar_win.cdksptr,
-                            acp_state.menubar_win.cur_x, acp_state.menubar_win.cur_y,
-                            (CDK_CSTRING2) lblText, 1, FALSE, FALSE);
-    drawCDKLabel(lblConfig, ObjOf (lblConfig)->box);
+//    lblText[0] = "<C></U>F3:Config";
+//    acp_state.menubar_win.cur_x += 40;
+////		acp_state.menubar_win.cur_y +=5;
+//    lblConfig = newCDKLabel(acp_state.menubar_win.cdksptr,
+//                            acp_state.menubar_win.cur_x, acp_state.menubar_win.cur_y,
+//                            (CDK_CSTRING2) lblText, 1, FALSE, FALSE);
+//    drawCDKLabel(lblConfig, ObjOf (lblConfig)->box);
 
     lblText[0] = "<C></U>F4:Exit";
-    acp_state.menubar_win.cur_x += 35;
+    acp_state.menubar_win.cur_x += 75;
     lblExit = newCDKLabel(acp_state.menubar_win.cdksptr,
                           acp_state.menubar_win.cur_x, acp_state.menubar_win.cur_y,
                           (CDK_CSTRING2) lblText, 1, FALSE, FALSE);
