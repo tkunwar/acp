@@ -184,36 +184,8 @@ void init_signals(void) {
 static void signal_handler(int sig) {
 	//set the signal code that we got
 	acp_state.recieved_signal_code = sig;
-//	var_debug("Got signal: %d", sig);
-//	if (sig == SIGHUP)
-//		sdebug("Got signal SIGHUP");
-//	if (sig == SIGSEGV) {
-//		sdebug("Got signal SIGSEGV");
-//	}
-//	if (sig == SIGBUS) {
-//		sdebug("Got signal SIGBUS");
-//	}
-//	var_debug("sig: %d", sig);
-//	if (sig == SIGQUIT)
-//		sdebug("Got signal SIGQUIT");
-//	var_debug("sig: %d", sig);
-//	if (sig == SIGKILL)
-//		sdebug("Got signal SIGKILL");
-//	var_debug("sig: %d", sig);
-//	if (sig == SIGINT)
-//		sdebug("Got singal SIGINT");
-	// Attempt to perform cleanup_after_failure when we have SIGINT,SIGKILL and SIGQUIT
-	// else give up
-//	if ((sig == SIGINT) || (sig == SIGQUIT) || (sig == SIGKILL)) {
 	sdebug("Prepairing to exit gracefully..");
 	acp_state.shutdown_in_progress = true;
-	//wait while cleanup_after_failure is finished
-	//a mutex lock would have been more efficient
-//		while(acp_state.shutdown_completed==false){
-//			sleep(1);
-//		}
-//	}
-//	exit(EXIT_FAILURE);
 	acp_shutdown();
 }
 /**

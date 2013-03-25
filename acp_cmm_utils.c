@@ -729,13 +729,10 @@ static int store_page_in_cc(struct compressed_page_t *cpage) {
 	} else {
 		// find the required cell with best fit strategy
 		target_cell = find_smallest_cell_from_celltable(cpage->page_len);
-		if (target_cell){
-//			var_debug("cid: %u avail_size: %u page_count: %u",target_cell->cell_id,target_cell->available_size,target_cell->stored_page_count);
-		}
 
 		if (!target_cell) {
 			target_cell = allocate_new_cell();
-//			var_debug("new cell: %u",target_cell->cell_id);
+			var_debug("new cell: %u",target_cell->cell_id);
 //			var_debug("No space currently,new cell: %u",target_cell->cell_id);
 			if (!target_cell) {
 				// This is bad neither do we have a cell with enough space to
@@ -749,12 +746,12 @@ static int store_page_in_cc(struct compressed_page_t *cpage) {
 				return ACP_ERR_NO_CELL;
 			}
 //			var_debug("Will store page [%u] with req_len [%d] in cell: %u",cpage->page_id,(n),target_cell->cell_id);
-//			var_debug("will cache page: %u in cell: %u",cpage->page_id,target_cell->cell_id);
+			var_debug("will cache page: %u in cell: %u",cpage->page_id,target_cell->cell_id);
 			save_page_to_cell(target_cell, cpage);
 			//form the list
 			cmm_module_state.cell_table_last_ele->next = target_cell;
 			cmm_module_state.cell_table_last_ele = target_cell;
-			cmm_module_state.cell_table_last_ele = NULL;
+			cmm_module_state.cell_table_last_ele ->next = NULL;
 			return ACP_OK;
 		}
 //		var_debug("Will store page [%u] with req_len [%d] in cell: %u",cpage->page_id,(n),target_cell->cell_id);
