@@ -250,13 +250,13 @@ static void *cmm_mem_stats_collector(void *args) {
 		//acquire lock before updating stats
 		pthread_mutex_lock(&cmm_mutexes.cmm_mem_stats_mutex);
 
-		snprintf(msg, 256, "%12lu", cmm_module_state.total_memory);
+		snprintf(msg, 256, "</32>%12lu<!32>", cmm_module_state.total_memory);
 		update_label(&acp_state.agl_cmm_ucm_total_memsize, msg);
 
-		snprintf(msg, 256, "%12u", cmm_module_state.total_pages);
+		snprintf(msg, 256, "</32>%12u<!32>", cmm_module_state.total_pages);
 		update_label(&acp_state.agl_cmm_ucm_total_pages, msg);
 
-		snprintf(msg, 256, "%12u", cmm_module_state.pages_active);
+		snprintf(msg, 256, "</32>%12u<!32>", cmm_module_state.pages_active);
 		update_label(&acp_state.agl_cmm_ucm_pages_active, msg);
 		//release lock
 		pthread_mutex_unlock(&cmm_mutexes.cmm_mem_stats_mutex);
@@ -457,16 +457,16 @@ static void *cmm_cc_stats_collector(void *args) {
 		//acquire lock before updating stats
 		pthread_mutex_lock(&cmm_mutexes.cmm_cc_stats_mutex);
 
-		snprintf(msg, 256, "%12lu", cmm_module_state.cc_current_size);
+		snprintf(msg, 256, "</24>%12lu<!24>", cmm_module_state.cc_current_size);
 		update_label(&acp_state.agl_cmm_cc_cur_memsize, msg);
 
-		snprintf(msg, 256, "%12u", cmm_module_state.cc_current_stored_pages);
+		snprintf(msg, 256, "</24>%12u<!24>", cmm_module_state.cc_current_stored_pages);
 		update_label(&acp_state.agl_cmm_cc_stored_pages, msg);
 
-		snprintf(msg, 256, "%12u", cmm_module_state.cc_cells_active);
+		snprintf(msg, 256, "</24>%12u<!24>", cmm_module_state.cc_cells_active);
 		update_label(&acp_state.agl_cmm_cc_cells, msg);
 
-		snprintf(msg, 256, "%12u", cmm_module_state.cc_page_out_timelag);
+		snprintf(msg, 256, "</24>%12u<!24>", cmm_module_state.cc_page_out_timelag);
 		update_label(&acp_state.agl_cmm_cc_pageout_timelag, msg);
 
 		// we are updating pagein timelag
@@ -562,10 +562,13 @@ static void page_data_filler(unsigned char *page_data) {
 static void free_page_table(struct page_table *head_ele) {
 	struct page_table *prev_node = head_ele, *cur_node = head_ele;
 	do {
+		if(!cur_node){
+			break;
+		}
 		prev_node = cur_node;
 		cur_node = cur_node->next;
 		free(prev_node);
-	} while (cur_node);
+	} while (cur_node->next);
 	//we have emptied page_table so set the pointer to null.
 	cmm_module_state.page_table = NULL;
 }
@@ -693,8 +696,14 @@ static int decompress_page(const struct compressed_page_t *cpage,
  */
 static void update_label(struct acp_global_labels *label, char new_content[]) {
 	char *mesg[2];
+	char *p;
 	curs_set(0);
-
+//	char new_msg[LOG_BUFF_SIZE];
+//	p = new_msg;
+//	p = strncpy(new_msg,"</24>",LOG_BUFF_SIZE);
+//	p = strncpy(p,new_content,LOG_BUFF_SIZE);
+//	p = strncpy(p,"<!24>",LOG_BUFF_SIZE);
+//	var_debug("to label: %s",new_msg);
 	mesg[0] = copyChar(new_content);
 	pthread_mutex_lock(&cmm_mutexes.cmm_cdk_screen_mutex);
 	setCDKLabel(label->lblptr, (CDK_CSTRING2) mesg, 1, false);

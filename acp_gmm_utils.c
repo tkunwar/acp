@@ -583,6 +583,9 @@ static void free_swap_page_table(struct swap_page_table_t *head_ele) {
 	struct swap_page_table_t *prev_node = head_ele, *cur_node = head_ele;
 	do {
 		prev_node = cur_node;
+		if (!cur_node){
+			break;
+		}
 		cur_node = cur_node->next;
 //		var_debug("deleting %u :",prev_node->page.page_id);
 		free(prev_node);
@@ -602,13 +605,13 @@ static void *gmm_mem_stats_collector(void *args) {
 		//acquire lock before updating stats
 		pthread_mutex_lock(&gmm_mutexes.gmm_mem_stats_mutex);
 
-		snprintf(msg, 256, "%12lu", gmm_module_state.total_memory);
+		snprintf(msg, 256, "</32>%12lu<!32>", gmm_module_state.total_memory);
 		update_label(&acp_state.agl_gmm_total_memory, msg);
 
-		snprintf(msg, 256, "%12u", gmm_module_state.total_pages);
+		snprintf(msg, 256, "</32>%12u<!32>", gmm_module_state.total_pages);
 		update_label(&acp_state.agl_gmm_total_pages, msg);
 
-		snprintf(msg, 256, "%12u", gmm_module_state.pages_active);
+		snprintf(msg, 256, "</32>%12u<!32>", gmm_module_state.pages_active);
 		update_label(&acp_state.agl_gmm_pages_active, msg);
 		//release lock
 		pthread_mutex_unlock(&gmm_mutexes.gmm_mem_stats_mutex);
@@ -642,10 +645,10 @@ static void *gmm_swap_stats_collector(void *args) {
 		}
 		pthread_mutex_lock(&gmm_mutexes.gmm_swap_stats_mutex);
 
-		snprintf(msg, 256, "%12lu", gmm_module_state.used_swap_space);
+		snprintf(msg, 256, "</24>%12lu<!24>", gmm_module_state.used_swap_space);
 		update_label(&acp_state.agl_gmm_swap_used_space, msg);
 
-		snprintf(msg, 256, "%12lu", gmm_module_state.page_out_timelag);
+		snprintf(msg, 256, "</24>%12lu<!24>", gmm_module_state.page_out_timelag);
 		update_label(&acp_state.agl_gmm_swap_pageout_timelag, msg);
 
 		pthread_mutex_unlock(&gmm_mutexes.gmm_swap_stats_mutex);
