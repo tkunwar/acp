@@ -8,7 +8,7 @@
 #include "acp_cmm_utils.h"
 
 //#define ACTIVATE_GMM_MODULE
-#define ACTIVATE_CMM_MODULE
+//#define ACTIVATE_CMM_MODULE
 
 //========== routines declaration============
 void process_user_response();

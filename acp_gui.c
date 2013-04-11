@@ -228,7 +228,7 @@ static void draw_menubar() {
      * to create a horizontal menu of three labels using actually one label
      * we can simply fill up this lblText[0] with spaces and other names.
      */
-    lblText[0] = "<C></U></32>F2:Help<!32>";
+    lblText[0] = "<C></U></32>F2:About<!32>";
     acp_state.menubar_win.cur_x += 4;
     acp_state.menubar_win.cur_y += 1;
     lblHelp = newCDKLabel(acp_state.menubar_win.cdksptr,

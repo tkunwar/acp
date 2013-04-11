@@ -1,8 +1,6 @@
-/*
- * acp_cmm_utils.h
- *
- *  Created on: Feb 25, 2013
- *      Author: tej
+/**
+ * @file acp_cmm_utils.h
+ * @brief Header file for acp_cmm_utils.c
  */
 
 #ifndef ACP_CMM_UTILS_H_

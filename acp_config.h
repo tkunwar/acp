@@ -55,7 +55,7 @@
  * @def STATUS_WINDOW_SIZE
  * @brief Size of status_window in no. of lines.
  */
-#define STATUS_WINDOW_SIZE 12
+#define STATUS_WINDOW_SIZE 10
 
 /**
  * @def RAW_MODE

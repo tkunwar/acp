@@ -299,7 +299,7 @@ void display_help() {
     mesg[0] = "<C>This program shows how a compressed paging mechanism has";
     mesg[1] = "<C>advantage over traditional paging systems.";
     mesg[2] = "<C></U>Project authors";
-    mesg[3] = "<C>Amrita,Rashmi and Varsha";
+    mesg[3] = "<C>Rashmi and Varsha";
 
     popupDialog(acp_state.master_screen, (CDK_CSTRING2) mesg, 4,
                 (CDK_CSTRING2) buttons, 1);

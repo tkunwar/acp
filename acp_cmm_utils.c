@@ -1,8 +1,6 @@
-/*
- * acp_cmm_utils.c
- *
- *  Created on: Feb 25, 2013
- *      Author: tej
+/**
+ * @file acp_cmm_utils.c
+ * @brief Includes code for cmm_module in acp.
  */
 
 #include "acp_cmm_utils.h"
